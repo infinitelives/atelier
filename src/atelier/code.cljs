@@ -70,34 +70,73 @@ Note: This widget is for representing clojure literals as source code
   "a static highlight/js code display"
   (reagent/as-element [component-static-code-display]))
 
-(defn editor-did-mount [input]
+(defn editor-did-mount [data-atom]
   (fn [this]
     (let [cm (js/CodeMirror
               (reagent/dom-node this)
               #js {:mode "clojure"
                    :lineNumbers true
-                   :value "{
-  :foo
-  {
-    :size [8 8]
-    :pos [124 100]
-  }
-}"
+                   :value (or (:value @data-atom) "")
                    :theme "zenburn"
                    :keyMap "emacs"})]
+      (add-watch data-atom nil
+                 (fn [key atom old-state new-state]
+                   (.log js/console "fn" key atom (str old-state) (str new-state))
+                   (when (not= old-state new-state)
+                     (.log js/console "setValue")
+                     ;; this setValue needs to NOT trigger an onchange
+                     (.setValue cm (:value new-state))
+                     (.log js/console "setCursor")
+                     (.setCursor cm (clj->js (:cursor new-state))))))
       (.on cm "change"
+           (fn [from to text removed origin]
+             (.log js/console "change:" (.getValue from) )
+             (.log js/console "C:" from to text removed origin)
+             (if (not= (.-origin to) "setValue")
+               (swap! data-atom assoc
+                      :value (.getValue from)
+                      :cursor (let [curs (.getCursor cm "head")]
+                                (.log js/console "curs" curs)
+                                {:line (.-line curs)
+                                 :ch (.-ch curs)}))
+               (.log js/console "skipped"))))
+
+      ;; this gets triggered on add-watch .setValue
+      ;; and this screws up devcards 'redo'
+      ;; TODO: filter out the unneeded events like in on change above
+      #_ (.on cm "cursorActivity"
            #(do
-              (.log js/console (.getValue %))
-              (reset! input (.getValue %)))))))
+              (.log js/console "cursorActivity")
+              (swap! data-atom assoc
+                     :cursor (let [curs (.getCursor cm "head")]
+                               (.log js/console "curs" curs)
+                               {:line (.-line curs)
+                                :ch (.-ch curs)})
+                     )
+              ))
+      )))
 
 
 
-(defn editor [input]
+(defn editor [data-atom]
   [(with-meta
      (fn [] [:div])
-     {:component-did-mount (editor-did-mount input)
+     {:component-did-mount (editor-did-mount data-atom)
       :component-will-unmount #(.log js/console "unmount" %)})])
 
 (defcard card-component-editable-display
   "reloadable, editable code entry"
   (reagent/as-element [editor (atom nil)]))
+
+
+(defcard card-component-changable-editor-with-reader
+  "as you change the code, the reader is invoked and the data structure dumped"
+  (fn [data-atom owner]
+    (reagent/as-element [editor data-atom]))
+                                        ;(reagent/as-element [editor (atom nil)])
+  {:value "{}\n"
+   :cursor {:line 1 :ch 0}}
+  {:inspect-data true
+   :history true}
+  ;(reagent/as-element [editor (atom nil)])
+)
