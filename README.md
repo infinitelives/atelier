@@ -30,7 +30,15 @@ To create a production build run:
     lein do clean, cljsbuild once min
 
 And open your browser in `resources/public/index.html`. You will not
-get live reloading, nor a REPL. 
+get live reloading, nor a REPL.
+
+## Devcards
+
+To see the devcards run:
+
+	lein figwheel
+
+Then point your browser at [localhost:3449/cards.html](http://localhost:3449/cards.html).
 
 ## License
 
