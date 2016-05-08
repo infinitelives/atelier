@@ -1,5 +1,10 @@
 (ns atelier.code
-  (:require [reagent.core :as reagent])
+  (:require [reagent.core :as reagent]
+            [cljsjs.codemirror]
+            [cljsjs.codemirror.mode.clojure]
+            [cljsjs.codemirror.keymap.emacs]
+
+)
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]])
   )
@@ -40,7 +45,7 @@ Note: This widget is for representing clojure literals as source code
      (fn []
        [:pre [:code
               {
-               :contenteditable "true"
+               ;:contentEditable "true"
                :style {:background "#3f3f3f"}
                :class "clojure"
                :dangerouslySetInnerHTML
@@ -50,7 +55,7 @@ Note: This widget is for representing clojure literals as source code
         (let [node (reagent/dom-node this)]
           (highlight-code node)))})])
 
-(defn component-code []
+(defn component-static-code-display []
   (highlight-component
    "{
   :foo
@@ -60,7 +65,39 @@ Note: This widget is for representing clojure literals as source code
   }
 }"))
 
-(defcard card-component-code
-  (reagent/as-element [component-code]))
 
-(defcard card-)
+(defcard card-component-static-code-display
+  "a static highlight/js code display"
+  (reagent/as-element [component-static-code-display]))
+
+(defn editor-did-mount [input]
+  (fn [this]
+    (let [cm (js/CodeMirror
+              (reagent/dom-node this)
+              #js {:mode "clojure"
+                   :lineNumbers true
+                   :value "{
+  :foo
+  {
+    :size [8 8]
+    :pos [124 100]
+  }
+}"
+                   :theme "zenburn"
+                   :keyMap "emacs"})]
+      (.on cm "change"
+           #(do
+              (.log js/console (.getValue %))
+              (reset! input (.getValue %)))))))
+
+
+
+(defn editor [input]
+  [(with-meta
+     (fn [] [:div])
+     {:component-did-mount (editor-did-mount input)
+      :component-will-unmount #(.log js/console "unmount" %)})])
+
+(defcard card-component-editable-display
+  "reloadable, editable code entry"
+  (reagent/as-element [editor (atom nil)]))
