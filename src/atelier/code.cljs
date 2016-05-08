@@ -1,5 +1,6 @@
 (ns atelier.code
   (:require [reagent.core :as reagent]
+            [cljs.tools.reader :refer [read-string]]
             [cljsjs.codemirror]
             [cljsjs.codemirror.mode.clojure]
             [cljsjs.codemirror.keymap.emacs]
@@ -93,12 +94,17 @@ Note: This widget is for representing clojure literals as source code
              (.log js/console "change:" (.getValue from) )
              (.log js/console "C:" from to text removed origin)
              (if (not= (.-origin to) "setValue")
-               (swap! data-atom assoc
-                      :value (.getValue from)
-                      :cursor (let [curs (.getCursor cm "head")]
-                                (.log js/console "curs" curs)
-                                {:line (.-line curs)
-                                 :ch (.-ch curs)}))
+               (do
+                 (swap! data-atom assoc
+                          :value (.getValue from)
+                          :cursor (let [curs (.getCursor cm "head")]
+                                    (.log js/console "curs" curs)
+                                    {:line (.-line curs)
+                                     :ch (.-ch curs)}))
+                 (let [parsed (read-string (.getValue from))]
+                   ;; successful parse. TODO: catch error
+                   (swap! data-atom assoc :parsed parsed)
+                   ))
                (.log js/console "skipped"))))
 
       ;; this gets triggered on add-watch .setValue
