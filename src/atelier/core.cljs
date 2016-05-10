@@ -1,6 +1,7 @@
 (ns atelier.core
   (:require [reagent.core :as reagent]
-            [atelier.code :as code])
+            [atelier.code :as code]
+            [atelier.canvas :as canvas])
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]])
   )

@@ -136,7 +136,7 @@ Note: This widget is for representing clojure literals as source code
 
 
 (defcard card-component-changable-editor-with-reader
-  "as you change the code, the reader is invoked and the data structure dumped"
+  "as you change the code, the reader is invoked and the data structure dumped. Undo and redo should work."
   (fn [data-atom owner]
     (reagent/as-element [editor data-atom]))
                                         ;(reagent/as-element [editor (atom nil)])
