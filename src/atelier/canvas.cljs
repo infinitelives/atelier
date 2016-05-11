@@ -60,7 +60,7 @@ Note: This widget is for representing infinitelives textures
 
 (defn canvas [data-atom]
   [(with-meta
-     (fn [] [:canvas {:style {:width "640px" :height "400px"}}])
+     (fn [] [:canvas {:style {:width "100px" :height "100px"}}])
      {:component-did-mount (canvas-did-mount data-atom)})])
 
 (defcard card-component-canvas
