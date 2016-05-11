@@ -42,7 +42,7 @@
   ;; optionally touch your app-state to force rerendering depending on
   ;; your application
   ;; (swap! app-state update-in [:__figwheel_counter] inc)
-)
+  )
 
 (defcard-doc
   "
@@ -53,9 +53,9 @@ Note: This widget is for representing infinitelives textures
 (defn canvas-did-mount [data-atom]
   (fn [this]
     (c/init
-          {:layers [:bg :fg]
-           :background 0xa0a0a0
-           :canvas (reagent/dom-node this)})
+     {:layers [:bg :fg]
+      :background 0xa0a0a0
+      :canvas (reagent/dom-node this)})
     ))
 
 (defn canvas [data-atom]
