@@ -68,17 +68,18 @@ Note: This widget is for representing infinitelives textures
   (reagent/as-element [canvas (atom nil)])
   )
 
-(defn draw-chessboard [gfx & {:keys [start-x start-y width height
-                                     colour-1 colour-2
-                                     tile-width tile-height]
-                              :or {start-x -50
-                                   start-y -50
-                                   width 100
-                                   height 100
-                                   colour-1 0x808080
-                                   colour-2 0xa0a0a0
-                                   tile-width 16
-                                   tile-height 16}}]
+(defn draw-chessboard
+  [gfx & {:keys [start-x start-y width height
+                 colour-1 colour-2
+                 tile-width tile-height]
+          :or {start-x -50
+               start-y -50
+               width 100
+               height 100
+               colour-1 0x808080
+               colour-2 0xa0a0a0
+               tile-width 16
+               tile-height 16}}]
   (doto gfx
     (.beginFill colour-1)
     (.lineStyle 0 0x000000)
@@ -89,41 +90,47 @@ Note: This widget is for representing infinitelives textures
    (for [cx (range (/ width tile-width))
          cy (range (/ height tile-height))
          :when (odd? (+ cx cy))]
-     (do
+     (let [left (+ start-x (* tile-width cx))
+           top (+ start-y (* tile-height cy))
+           right (min
+                  (+ start-x (* tile-width (inc cx)))
+                  (+ start-x width))
+           bottom (min
+                   (+ start-y (* tile-height (inc cy)))
+                   (+ start-y height))]
        (.log js/console cx cy)
        (doto gfx
          (.beginFill colour-2)
          (.lineStyle 0 0x000000)
-         (.drawRect (+ start-x (* tile-width cx))
-                    (+ start-y (* tile-height cy))
+         (.drawRect left top (- right left) (- bottom top))
+         .endFill)))))
 
-                    (-
-                     (min
-                      (+ start-x (* tile-width (inc cx)))
-                      (+ start-x width))
-                     (+ start-x (* tile-width cx)))
-
-                    (-
-                     (min
-                      (+ start-y (* tile-height (inc cy)))
-                      (+ start-y height))
-                     (+ start-y (* tile-height cy)))
-                    )
-         .endFill
-         ))
-
-     ))
-
-
-
-  (
-   )
-  )
+(defn draw-foreground-rectangle
+  [gfx scale [x y] [width height] [image-width image-height]]
+  (let [left (* scale -0.5 image-width)
+        top (* scale -0.5 image-height)
+        scale-x (* scale x)
+        scale-y (* scale y)
+        scale-w (* scale width)
+        scale-h (* scale height)
+        start-x (+ scale-x left)
+        start-y (+ scale-y top)]
+    (doto gfx
+      (.beginFill 0x000000 0.0)
+      (.lineStyle 1 0x000000 1)
+      (.drawRect (dec start-x) (dec start-y)
+                 (inc scale-w) (inc scale-h))
+      (.lineStyle 1 0xffffff 1)
+      (.drawRect (- start-x 2) (- start-y 2)
+                 (+ 3 scale-w) (+ 3 scale-h))
+      (.lineStyle 1 0x000000 1)
+      (.drawRect (- start-x 3) (- start-y 3)
+                 (+ 5 scale-w) (+ 5 scale-h)))))
 
 (defn image-canvas-did-mount [data-atom]
   (fn [this]
     (let [canv (c/init
-                {:layers [:bg :fg]
+                {:layers [:bg :image :fg]
                  :background 0x404040
 
                  ;; canvas width and geight from the dom node are wrong at this point
@@ -134,47 +141,153 @@ Note: This widget is for representing infinitelives textures
       (go
         (<! (r/load-resources canv :fg [bg-url]))
 
-        (t/set-texture! :rabbit (r/get-texture :bunny :nearest))
+        (let [rabbit-texture (r/get-texture :bunny :nearest)
+              texture-width (.-width rabbit-texture)
+              texture-height (.-height rabbit-texture)
+              empty-colour 0x800000
+              border-colour 0xffffff
+              highlight-colour 0xff00ff
+              bunny-width texture-width
+              bunny-height texture-height
+              scale (get @data-atom :scale 3)
+              full-colour 0x0000ff
+              ]
+          (t/set-texture! :rabbit rabbit-texture)
 
-        (m/with-sprite canv :fg
-          [rabbit (s/make-sprite :rabbit :scale 3)]
-          (let [box (js/PIXI.Graphics.)
-                empty-colour 0x800000
-                border-colour 0xffffff
-                bunny-width 26
-                bunny-height 37
-                scale 3
-                full-colour 0x0000ff
+          (m/with-sprite canv :image
+            [rabbit (s/make-sprite :rabbit :scale scale)]
+            (let [image-background (js/PIXI.Graphics.)
+                  image-foreground (js/PIXI.Graphics.)]
+              (doto image-background
+                (.beginFill empty-colour 0.0)
+                (.lineStyle 1 border-colour)
+                (.drawRect (dec (* scale -0.5 bunny-width))
+                           (dec (* scale -0.5 bunny-height))
+                           (inc (* scale bunny-width))
+                           (inc (* scale bunny-height))))
 
-                ]
-            (doto box
-              (.beginFill empty-colour 0.0)
-              (.lineStyle 1 border-colour)
-              (.drawRect (dec (* scale -0.5 bunny-width)) (dec (* scale -0.5 bunny-height))
-                         (inc (* scale bunny-width)) (inc (* scale bunny-height)))
-              )
+              (draw-foreground-rectangle
+               image-foreground scale
+               [9 10] [1 10] [texture-width texture-height])
+
+              (draw-chessboard
+               image-background
+               :start-x (* scale -0.5 bunny-width)
+               :start-y (* scale -0.5 bunny-height)
+               :width (* scale bunny-width)
+               :height (* scale bunny-height)
+               :colour-1 0x8080ff
+               :colour-2 0xa0a0ff
+               :tile-width 24
+               :tile-height 24)
+
+              (.addChild (m/get-layer canv :bg) image-background)
+              (.addChild (m/get-layer canv :fg) image-foreground)
+
+              (let [position [0 0]]
+                (apply s/set-pivot! (m/get-layer canv :bg) position)
+                (apply s/set-pivot! (m/get-layer canv :image) position)
+                (apply s/set-pivot! (m/get-layer canv :fg) position))
+
+              ;; add watcher? These will bunch
+              ;; up on load unless we remove them
+              (add-watch data-atom :dummy
+                         (fn [key atom old-state
+                              {:keys [scale highlights offset]}]
+                           (s/set-scale! rabbit scale)
+
+                           (let [[x y] offset
+                                 position [(- x) (- y)]]
+                             (apply s/set-pivot! (m/get-layer canv :bg) position)
+                             (apply s/set-pivot! (m/get-layer canv :image) position)
+                             (apply s/set-pivot! (m/get-layer canv :fg) position))
+
+                           (.clear image-background)
+                           (.clear image-foreground)
+
+                           (draw-chessboard
+                            image-background
+                            :start-x (* scale -0.5 bunny-width)
+                            :start-y (* scale -0.5 bunny-height)
+                            :width (* scale bunny-width)
+                            :height (* scale bunny-height)
+                            :colour-1 0x8080ff
+                            :colour-2 0xa0a0ff
+                            :tile-width 24
+                            :tile-height 24)
+
+                           (doto image-background
+                             (.beginFill empty-colour 0.0)
+                             (.lineStyle 1 border-colour)
+                             (.drawRect (dec (* scale -0.5 bunny-width))
+                                        (dec (* scale -0.5 bunny-height))
+                                        (inc (* scale bunny-width))
+                                        (inc (* scale bunny-height))))
+
+                           (loop [[{:keys [pos size]} & t] highlights]
+                             (.log js/console "pos" pos "size" size)
+                             (draw-foreground-rectangle
+                              image-foreground scale
+                              pos size [texture-width texture-height])
+                             (when (seq t)
+                               (recur t)))
 
 
-            (draw-chessboard
-             box
-             :start-x (* scale -0.5 bunny-width)
-             :start-y (* scale -0.5 bunny-height)
-             :width (* scale bunny-width)
-             :height (* scale bunny-height))
+                           ))
 
-            (.addChild (m/get-layer canv :bg) box)
-
-            (loop [f 0]
-              (<! (e/next-frame))
-              (recur (inc f)))))))))
+              (loop [f 0]
+                (<! (e/next-frame))
+                (recur (inc f))))))))))
 
 (defn image-canvas [data-atom]
   [(with-meta
      (fn [] [:canvas {:style {:width "640px" :height "200px"}}])
      {:component-did-mount (image-canvas-did-mount data-atom)})]
-)
+  )
 
 (defcard card-component-canvas
-  "A basic pixi canvas with different shape. Need to fix the aspect ratio bug (when specifying custom canvas div."
+  "A basic pixi canvas with different shape."
   (reagent/as-element [image-canvas (atom nil)])
   )
+
+
+(defcard card-component-canvas
+  "A basic pixi canvas with changable scale and highlight box."
+  (fn [data-atom owner]
+    (reagent/as-element
+     [:div
+      [image-canvas data-atom]
+      [:p "scale: "
+       [:button {:on-click #(swap! data-atom update :scale dec)} "-"]
+       [:button {:on-click #(swap! data-atom update :scale inc)} "+"]]
+      [:p "offset: "
+       [:button {:on-click #(swap! data-atom update-in [:offset 0] - 5)} "left"]
+       [:button {:on-click #(swap! data-atom update-in [:offset 0] + 5)} "right"]
+       [:button {:on-click #(swap! data-atom update-in [:offset 1] - 5)} "up"]
+       [:button {:on-click #(swap! data-atom update-in [:offset 1] + 5)} "down"]]
+      [:p
+       [:button
+        {:on-click
+         #(swap! data-atom update-in [:highlights 0]
+                 assoc
+                 :pos [(int (* 24 (rand)))
+                       (int (* 24 (rand)))]
+                 :size [(inc (int (* 10 (rand))))
+                        (inc (int (* 10 (rand))))])}
+        "highlight"]]]))
+
+  {
+   :highlights
+   [
+    {:pos [9 12]
+     :size [1 10]}
+    ]
+
+   :scale 3
+
+   :offset [0 0]
+   }
+
+  {:inspect-data true
+   :history true
+   })
