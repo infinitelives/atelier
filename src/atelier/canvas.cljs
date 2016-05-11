@@ -12,6 +12,7 @@
             [infinitelives.pixi.sprite :as s]
             [infinitelives.pixi.pixelfont :as pf]
             [infinitelives.utils.math :as math]
+            [infinitelives.utils.events :as events]
             [infinitelives.utils.sound :as sound]
 
 )
@@ -23,11 +24,16 @@
    )
   )
 
+;; pass key handler defaults through so codemirror
+;; handlers continue to work
+(events/allow-key-defaults)
+
 (enable-console-print!)
 
 (println "Edits to this text should show up in your developer console.")
 
-;; define your app data so that it doesn't get over-written on reload
+  ;; define your app data so that it doesn't get over-written on reload
+
 
 (defonce app-state (atom {:text "Hello world!"}))
 
