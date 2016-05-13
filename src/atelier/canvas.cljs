@@ -179,6 +179,16 @@ Note: This widget is for representing infinitelives textures
                     ))
                 (recur))
 
+              (and (= c mouse-down)
+                   (= 0 (.-button ev)))
+              (do
+                (let [bounds (.getBoundingClientRect canvas)
+                      top (.-top bounds)
+                      left (.-left bounds)
+                      ]
+                  (log "mouse-down left:" ox oy (- ox left) (- oy top)))
+                (recur))
+
               (= c mouse-wheel)
               ;; mouse wheel movement
               (do
