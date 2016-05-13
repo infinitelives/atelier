@@ -14,6 +14,9 @@
             [infinitelives.utils.math :as math]
             [infinitelives.utils.events :as events]
             [infinitelives.utils.sound :as sound]
+            [infinitelives.utils.console :refer [log]]
+
+            [cljs.core.async :refer [<! chan put! alts!]]
 
 )
 
@@ -98,7 +101,7 @@ Note: This widget is for representing infinitelives textures
            bottom (min
                    (+ start-y (* tile-height (inc cy)))
                    (+ start-y height))]
-       (.log js/console cx cy)
+       ;(.log js/console cx cy)
        (doto gfx
          (.beginFill colour-2)
          (.lineStyle 0 0x000000)
@@ -126,6 +129,92 @@ Note: This widget is for representing infinitelives textures
       (.lineStyle 1 0x000000 1)
       (.drawRect (- start-x 3) (- start-y 3)
                  (+ 5 scale-w) (+ 5 scale-h)))))
+
+
+(defn control-thread [mouse-down mouse-up mouse-move mouse-wheel
+                      getpos-fn setpos-fn zoom-fn]
+  (go
+    (loop []
+      (let [[data c] (alts! [mouse-move mouse-up mouse-down mouse-wheel])]
+        ;(log "data" data "c" c)
+        (when-not (nil? data)
+          (let [[ev ox oy] data]
+            (cond
+              (and (= c mouse-down)
+                   (= 2 (.-button ev)))
+              ;; mouse down
+              (let [[start-x start-y] (getpos-fn)]
+
+                (log "mouse-down" ox oy (getpos-fn))
+                (loop [x 0 y 0]
+                  (let [[data2 c2] (alts! [mouse-up mouse-move mouse-wheel])]
+                    (log "!!!" data2)
+                    (when-not (nil? data2)
+                      (let [[ev x2 y2] data2]
+                        (log "->" ev x2 y2)
+                        (cond
+                          (= c2 mouse-up)
+                          (log "mouse-up")
+
+                          (= c2 mouse-move)
+                          (do (log "mouse-move" x2 y2)
+                              (setpos-fn
+                               (+ start-x (- x2 ox))
+                               (+ start-y (- y2 oy)))
+                              (recur x2 y2))
+
+                          (= c2 mouse-wheel)
+                          (do
+                            (log "mouse-wheel 2" x2 x y)
+                            (zoom-fn (Math/sign x2))
+                            (recur x y))
+                          )))
+                    ))
+                (recur))
+
+              (= c mouse-wheel)
+              ;; mouse wheel movement
+              (do
+                (log "mousewheel:" (Math/sign ox))
+                (zoom-fn (Math/sign ox))
+                (recur))
+
+              ;; default
+              :default
+              (recur))))
+        )))
+  )
+
+
+(defn canvas-control [el data-atom]
+  (let [mouse-down (chan 1)
+        mouse-up (chan 1)
+        mouse-move (chan 1)
+        mouse-wheel (chan 1)]
+    (.addEventListener el "mousedown"
+                       #(do
+                          ;(log "MD")
+                          (put! mouse-down [% (.-clientX %) (.-clientY %)])
+                          (.preventDefault %)))
+    (.addEventListener el "mouseup"
+                       #(do ;(log "MU")
+                            (put! mouse-up [% (.-clientX %) (.-clientY %)])
+                            (.preventDefault %)))
+    (.addEventListener el "mousemove"
+                       #(do ;(log "MM")
+                            (put! mouse-move [% (.-clientX %) (.-clientY %)])))
+    (.addEventListener el "mousewheel"
+                       #(do (log "MW")
+                            (put! mouse-wheel [% (.-wheelDelta %)])
+                            (.preventDefault %)))
+
+    (control-thread mouse-down mouse-up mouse-move mouse-wheel
+                    (fn [] (:offset @data-atom))
+                    (fn [x y] (swap! data-atom assoc :offset [x y]))
+                    (fn [z] (swap! data-atom update :scale + z)))
+    )
+  )
+
 
 (defn image-canvas-did-mount [data-atom]
   (fn [this]
@@ -158,6 +247,13 @@ Note: This widget is for representing infinitelives textures
             [rabbit (s/make-sprite :rabbit :scale scale)]
             (let [image-background (js/PIXI.Graphics.)
                   image-foreground (js/PIXI.Graphics.)]
+              (set! (.-interactive image-background) true)
+              (set! (.-mousedown image-background) #(.log js/console "bg:" %))
+
+              (set! (.-oncontextmenu (:canvas canv))
+                      (fn [e] (.preventDefault e)))
+              (canvas-control (:canvas canv) data-atom)
+
               (doto image-background
                 (.beginFill empty-colour 0.0)
                 (.lineStyle 1 border-colour)
@@ -290,4 +386,29 @@ Note: This widget is for representing infinitelives textures
 
   {:inspect-data true
    :history true
+   })
+
+
+(defcard card-component-canvas-draggable
+  "A basic pixi canvas with changable scale and highlight box. Right click
+and drag to reposition canvas. mouse wheel to zoom."
+  (fn [data-atom owner]
+    (reagent/as-element
+     [:div
+      [image-canvas data-atom]]))
+
+  {
+   :highlights
+   [
+    {:pos [9 12]
+     :size [1 10]}
+    ]
+
+   :scale 3
+
+   :offset [0 0]
+   }
+
+  {:inspect-data true
+   ;:history true
    })
