@@ -255,14 +255,18 @@ Note: This widget is for representing infinitelives textures
                  ;; so to keep aspect ratio correct we pass them in
                  :width 640 :height 200
                  :canvas (reagent/dom-node this)})
-          bg-url "/img/peasanttiles01.png"
-          ;"http://www.goodboydigital.com/pixijs/examples/1/bunny.png"
+          bg-url
+                                        ;"/img/peasanttiles01.png"
+          "http://www.goodboydigital.com/pixijs/examples/1/bunny.png"
           ]
       (go
         (<! (r/load-resources canv :fg [bg-url]))
 
-        (let [rabbit-texture (r/get-texture :peasanttiles01 :nearest)
-              _ (log "RABBIT-TEXTURE" rabbit-texture)
+        (let [rabbit-texture (r/get-texture
+                              :bunny
+                              ;:peasanttiles01
+                              :nearest
+                              )
               texture-width (.-width rabbit-texture)
               texture-height (.-height rabbit-texture)
               empty-colour 0x800000
