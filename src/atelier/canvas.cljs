@@ -391,7 +391,11 @@ Note: This widget is for representing infinitelives textures
 
 (defcard card-component-canvas-draggable
   "A basic pixi canvas with changable scale and highlight box. Right click
-and drag to reposition canvas. mouse wheel to zoom."
+and drag to reposition canvas. mouse wheel to zoom.
+
+  # TODO
+    - fix the mouseout with mousedown bug. (move mouse outside canvas, lift button, then back in)
+"
   (fn [data-atom owner]
     (reagent/as-element
      [:div
