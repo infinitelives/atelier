@@ -131,11 +131,12 @@ Note: This widget is for representing infinitelives textures
                  (+ 5 scale-w) (+ 5 scale-h)))))
 
 
-(defn control-thread [mouse-down mouse-up mouse-move mouse-wheel
+(defn control-thread [canvas
+                      mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
                       getpos-fn setpos-fn zoom-fn]
   (go
     (loop []
-      (let [[data c] (alts! [mouse-move mouse-up mouse-down mouse-wheel])]
+      (let [[data c] (alts! [mouse-move mouse-up mouse-down mouse-wheel mouse-out mouse-over])]
         ;(log "data" data "c" c)
         (when-not (nil? data)
           (let [[ev ox oy] data]
@@ -147,7 +148,7 @@ Note: This widget is for representing infinitelives textures
 
                 (log "mouse-down" ox oy (getpos-fn))
                 (loop [x 0 y 0]
-                  (let [[data2 c2] (alts! [mouse-up mouse-move mouse-wheel])]
+                  (let [[data2 c2] (alts! [mouse-up mouse-move mouse-wheel mouse-out mouse-over])]
                     (log "!!!" data2)
                     (when-not (nil? data2)
                       (let [[ev x2 y2] data2]
@@ -155,6 +156,12 @@ Note: This widget is for representing infinitelives textures
                         (cond
                           (= c2 mouse-up)
                           (log "mouse-up")
+
+                          (= c2 mouse-out)
+                          (log "mouse-out")
+
+                          (= c2 mouse-over)
+                          (log "mouse-over")
 
                           (= c2 mouse-move)
                           (do (log "mouse-move" x2 y2)
@@ -190,25 +197,37 @@ Note: This widget is for representing infinitelives textures
   (let [mouse-down (chan 1)
         mouse-up (chan 1)
         mouse-move (chan 1)
-        mouse-wheel (chan 1)]
+        mouse-wheel (chan 1)
+        mouse-out (chan 1)
+        mouse-over (chan 1)]
     (.addEventListener el "mousedown"
                        #(do
-                          ;(log "MD")
+                                        ;(log "MD")
                           (put! mouse-down [% (.-clientX %) (.-clientY %)])
                           (.preventDefault %)))
     (.addEventListener el "mouseup"
-                       #(do ;(log "MU")
-                            (put! mouse-up [% (.-clientX %) (.-clientY %)])
-                            (.preventDefault %)))
+                       #(do             ;(log "MU")
+                          (put! mouse-up [% (.-clientX %) (.-clientY %)])
+                          (.preventDefault %)))
     (.addEventListener el "mousemove"
-                       #(do ;(log "MM")
-                            (put! mouse-move [% (.-clientX %) (.-clientY %)])))
+                       #(do             ;(log "MM")
+                          (put! mouse-move [% (.-clientX %) (.-clientY %)])))
     (.addEventListener el "mousewheel"
                        #(do (log "MW")
                             (put! mouse-wheel [% (.-wheelDelta %)])
                             (.preventDefault %)))
+    (.addEventListener el "mouseout"
+                       #(do (log "MOut")
+                            (put! mouse-out [% (.-clientX %) (.-clientY %)])
+                            (.preventDefault %)))
+    (.addEventListener el "mouseover"
+                       #(do (log "MOver")
+                            (put! mouse-over [% (.-clientX %) (.-clientY %)])
+                            (.preventDefault %)))
 
-    (control-thread mouse-down mouse-up mouse-move mouse-wheel
+
+    (control-thread el
+                    mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
                     (fn [] (:offset @data-atom))
                     (fn [x y] (swap! data-atom assoc :offset [x y]))
                     (fn [z] (swap! data-atom update :scale + z)))
@@ -226,11 +245,14 @@ Note: This widget is for representing infinitelives textures
                  ;; so to keep aspect ratio correct we pass them in
                  :width 640 :height 200
                  :canvas (reagent/dom-node this)})
-          bg-url "http://www.goodboydigital.com/pixijs/examples/1/bunny.png"]
+          bg-url "/img/peasanttiles01.png"
+          ;"http://www.goodboydigital.com/pixijs/examples/1/bunny.png"
+          ]
       (go
         (<! (r/load-resources canv :fg [bg-url]))
 
-        (let [rabbit-texture (r/get-texture :bunny :nearest)
+        (let [rabbit-texture (r/get-texture :peasanttiles01 :nearest)
+              _ (log "RABBIT-TEXTURE" rabbit-texture)
               texture-width (.-width rabbit-texture)
               texture-height (.-height rabbit-texture)
               empty-colour 0x800000
@@ -391,11 +413,7 @@ Note: This widget is for representing infinitelives textures
 
 (defcard card-component-canvas-draggable
   "A basic pixi canvas with changable scale and highlight box. Right click
-and drag to reposition canvas. mouse wheel to zoom.
-
-  # TODO
-    - fix the mouseout with mousedown bug. (move mouse outside canvas, lift button, then back in)
-"
+and drag to reposition canvas. mouse wheel to zoom."
   (fn [data-atom owner]
     (reagent/as-element
      [:div
