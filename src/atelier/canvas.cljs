@@ -12,6 +12,7 @@
             [infinitelives.pixi.sprite :as s]
             [infinitelives.pixi.pixelfont :as pf]
             [infinitelives.utils.math :as math]
+            [infinitelives.utils.vec2 :as vec2]
             [infinitelives.utils.events :as events]
             [infinitelives.utils.sound :as sound]
             [infinitelives.utils.console :refer [log]]
@@ -131,9 +132,9 @@ Note: This widget is for representing infinitelives textures
                  (+ 5 scale-w) (+ 5 scale-h)))))
 
 
-(defn control-thread [canvas
+(defn control-thread [canvas texture-width texture-height
                       mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
-                      getpos-fn setpos-fn zoom-fn]
+                      getpos-fn setpos-fn zoom-fn sethighlight-fn getscale-fn]
   (go
     (loop []
       (let [[data c] (alts! [mouse-move mouse-up mouse-down mouse-wheel mouse-out mouse-over])]
@@ -186,8 +187,75 @@ Note: This widget is for representing infinitelives textures
                       top (.-top bounds)
                       left (.-left bounds)
                       ]
-                  (log "mouse-down left:" ox oy (- ox left) (- oy top)))
-                (recur))
+
+                  ;;
+                  ;; Mouse left button down and drag
+                  ;;
+                  (log "mouse-down left:" ox oy (- ox left) (- oy top))
+
+                  (let [
+                        md-x (- ox left)
+                        md-y (- oy top)
+
+                        [start-x start-y] (getpos-fn)
+                        scale (getscale-fn)
+
+                        co-ord (vec2/vec2 md-x md-y)
+                        c (vec2/vec2 (/ (.-width canvas) 2)
+                                     (/ (.-height canvas) 2)) ;; half canvas size
+                        s (vec2/vec2 start-x start-y)
+                        I (vec2/vec2 (/ texture-width -2)
+                                     (/ texture-height -2)) ;; negative half loaded image size
+
+                        l (-> co-ord
+                              (vec2/sub c)
+                              (vec2/sub s)
+                              (vec2/sub (vec2/scale I scale))
+                              (vec2/scale (/ 1 scale)))
+
+
+                        ]
+                    (log "_" (vec2/get-x l) (vec2/get-y l))
+                    (loop [x 0 y 0]
+                      (let [[data2 c2] (alts! [mouse-up mouse-move mouse-wheel mouse-out mouse-over])]
+                        (log "!!!" data2)
+                        (when-not (nil? data2)
+                          (let [[ev x2 y2] data2
+                                new-co-ord (vec2/vec2 (- x2 left) (- y2 top))
+                                e (-> new-co-ord
+                                      (vec2/sub c)
+                                      (vec2/sub s)
+                                      (vec2/sub (vec2/scale I scale))
+                                      (vec2/scale (/ 1 scale)))
+                                ]
+                            (log "->" ev x2 y2)
+                            (cond
+                              (= c2 mouse-up)
+                              (log "mouse-up")
+
+                              (= c2 mouse-out)
+                              (log "mouse-out")
+
+                              (= c2 mouse-over)
+                              (log "mouse-over")
+
+                              (= c2 mouse-move)
+                              (do (log "mouse-move" x2 y2)
+
+                                  (sethighlight-fn
+                                   (int (vec2/get-x l)) (int (vec2/get-y l))
+                                   (int (vec2/get-x e)) (int (vec2/get-y e))
+                                   )
+
+                                  (recur x2 y2))
+
+                              :default
+                              (recur x y)
+
+                              )))
+                        )))
+
+                  (recur)))
 
               (= c mouse-wheel)
               ;; mouse wheel movement
@@ -203,7 +271,7 @@ Note: This widget is for representing infinitelives textures
   )
 
 
-(defn canvas-control [el data-atom]
+(defn canvas-control [el data-atom texture-width texture-height]
   (let [mouse-down (chan 1)
         mouse-up (chan 1)
         mouse-move (chan 1)
@@ -236,11 +304,19 @@ Note: This widget is for representing infinitelives textures
                             (.preventDefault %)))
 
 
-    (control-thread el
+    (control-thread el texture-width texture-height
                     mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
                     (fn [] (:offset @data-atom))
                     (fn [x y] (swap! data-atom assoc :offset [x y]))
-                    (fn [z] (swap! data-atom update :scale + z)))
+                    (fn [z] (swap! data-atom update :scale + z))
+                    (fn [x y x2 y2] (swap! data-atom update-in
+                                           [:highlights 0]
+                                           assoc
+                                           :pos [x y]
+                                           :size [(- x2 x) (- y2 y)]
+                                                          ))
+                    (fn [] (:scale @data-atom))
+                    )
     )
   )
 
@@ -253,17 +329,21 @@ Note: This widget is for representing infinitelives textures
 
                  ;; canvas width and geight from the dom node are wrong at this point
                  ;; so to keep aspect ratio correct we pass them in
-                 :width 640 :height 200
+                 :width 640 :height 480
                  :canvas (reagent/dom-node this)})
           bg-url
                                         ;"/img/peasanttiles01.png"
-          "http://www.goodboydigital.com/pixijs/examples/1/bunny.png"
+ ;         "http://www.goodboydigital.com/pixijs/examples/1/bunny.png"
+;"/img/cpcmockup8px.png"
+"https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
           ]
       (go
         (<! (r/load-resources canv :fg [bg-url]))
 
         (let [rabbit-texture (r/get-texture
-                              :bunny
+                              :sprites
+                              ;:cpcmockup8px
+                              ;:bunny
                               ;:peasanttiles01
                               :nearest
                               )
@@ -288,7 +368,9 @@ Note: This widget is for representing infinitelives textures
 
               (set! (.-oncontextmenu (:canvas canv))
                       (fn [e] (.preventDefault e)))
-              (canvas-control (:canvas canv) data-atom)
+
+              (canvas-control (:canvas canv) data-atom
+                              texture-width texture-height)
 
               (doto image-background
                 (.beginFill empty-colour 0.0)
@@ -373,7 +455,7 @@ Note: This widget is for representing infinitelives textures
 
 (defn image-canvas [data-atom]
   [(with-meta
-     (fn [] [:canvas {:style {:width "640px" :height "200px"}}])
+     (fn [] [:canvas {:style {:width "640px" :height "480px"}}])
      {:component-did-mount (image-canvas-did-mount data-atom)})]
   )
 
