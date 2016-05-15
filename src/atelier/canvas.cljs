@@ -132,6 +132,35 @@ Note: This widget is for representing infinitelives textures
                  (+ 5 scale-w) (+ 5 scale-h)))))
 
 
+(defn canvas->local [canvas [x y] [start-x start-y] [texture-width texture-height] scale]
+  (let [
+        bounds (.getBoundingClientRect canvas)
+        top (.-top bounds)
+        left (.-left bounds)
+
+        md-x (- x left)
+        md-y (- y top)
+
+        co-ord (vec2/vec2 md-x md-y)
+        half-canvas (vec2/vec2
+                     (/ (.-width canvas) 2)
+                     (/ (.-height canvas) 2)) ;; half canvas size
+        canvas-offset (vec2/vec2 start-x start-y)
+        half-texture (vec2/scale
+                      (vec2/vec2 (/ texture-width -2)
+                                 (/ texture-height -2))
+                      scale) ;; negative half loaded image size
+
+        local-offset (-> co-ord
+                         (vec2/sub half-canvas)
+                         (vec2/sub canvas-offset)
+                         (vec2/sub half-texture)
+                         (vec2/scale (/ 1 scale)))
+        ]
+    local-offset))
+
+
+
 (defn control-thread [canvas texture-width texture-height
                       mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
                       getpos-fn setpos-fn zoom-fn sethighlight-fn getscale-fn]
@@ -175,32 +204,8 @@ Note: This widget is for representing infinitelives textures
                           (do
                             (log "mouse-wheel 2" x2 x y)
 
-                            (let [
-                                  bounds (.getBoundingClientRect canvas)
-                                  top (.-top bounds)
-                                  left (.-left bounds)
-
-                                  md-x (- x left)
-                                  md-y (- y top)
-
-                                  [start-x start-y] (getpos-fn)
-                                  scale (getscale-fn)
-
-                                  co-ord (vec2/vec2 md-x md-y)
-                                  half-canvas (vec2/vec2
-                                               (/ (.-width canvas) 2)
-                                               (/ (.-height canvas) 2)) ;; half canvas size
-                                  canvas-offset (vec2/vec2 start-x start-y)
-                                  half-texture (vec2/scale
-                                                (vec2/vec2 (/ texture-width -2)
-                                                           (/ texture-height -2))
-                                                scale) ;; negative half loaded image size
-
-                                  local-offset (-> co-ord
-                                                   (vec2/sub half-canvas)
-                                                   (vec2/sub canvas-offset)
-                                                   (vec2/sub half-texture)
-                                                   (vec2/scale (/ 1 scale)))
+                            (let [local-offset (canvas->local
+                                                canvas [x y] (getpos-fn) [texture-width texture-height] (getscale-fn))
                                   ]
                               (log "pixel:" local-offset)
                               (zoom-fn (Math/sign x2))
@@ -239,11 +244,8 @@ Note: This widget is for representing infinitelives textures
                                                  (/ texture-height -2))
                                       scale) ;; negative half loaded image size
 
-                        local-offset (-> co-ord
-                                         (vec2/sub half-canvas)
-                                         (vec2/sub canvas-offset)
-                                         (vec2/sub half-texture)
-                                         (vec2/scale (/ 1 scale)))
+                        local-offset (canvas->local
+                                      canvas [ox oy] (getpos-fn) [texture-width texture-height] (getscale-fn))
 
 
                         ]
