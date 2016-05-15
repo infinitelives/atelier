@@ -160,6 +160,31 @@ Note: This widget is for representing infinitelives textures
     local-offset))
 
 
+(defn local->canvas [canvas local-offset co-ord [start-x start-y]
+                     [texture-width texture-height]
+                     new-scale]
+  (let [
+        bounds (.getBoundingClientRect canvas)
+        top (.-top bounds)
+        left (.-left bounds)
+
+        half-canvas (vec2/vec2
+                     (/ (.-width canvas) 2)
+                     (/ (.-height canvas) 2)) ;; half canvas size
+        canvas-offset (vec2/vec2 start-x start-y)
+        half-texture (vec2/vec2 (/ texture-width -2)
+                                (/ texture-height -2))
+
+        ;; calculate the new canvas offset to keep this pixel there on the canvas
+        new-offset (-> local-offset
+                       (vec2/scale new-scale)
+                       (vec2/add half-canvas)
+                       (vec2/add (vec2/scale half-texture new-scale))
+                       (vec2/sub co-ord)
+                       (vec2/scale -1))
+        ]
+    new-offset))
+
 
 (defn control-thread [canvas texture-width texture-height
                       mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
@@ -227,42 +252,19 @@ Note: This widget is for representing infinitelives textures
                   ;;
                   (log "mouse-down left:" ox oy (- ox left) (- oy top))
 
-                  (let [
-                        md-x (- ox left)
-                        md-y (- oy top)
-
-                        [start-x start-y] (getpos-fn)
-                        scale (getscale-fn)
-
-                        co-ord (vec2/vec2 md-x md-y)
-                        half-canvas (vec2/vec2
-                                     (/ (.-width canvas) 2)
-                                     (/ (.-height canvas) 2)) ;; half canvas size
-                        canvas-offset (vec2/vec2 start-x start-y)
-                        half-texture (vec2/scale
-                                      (vec2/vec2 (/ texture-width -2)
-                                                 (/ texture-height -2))
-                                      scale) ;; negative half loaded image size
-
-                        local-offset (canvas->local
+                  (let [local-offset (canvas->local
                                       canvas [ox oy] (getpos-fn) [texture-width texture-height] (getscale-fn))
-
-
                         ]
-                                        ;(log "_" (vec2/get-x local-offset) (vec2/get-y local-offset))
                     (loop [x 0 y 0]
                       (let [[data2 c2] (alts! [mouse-up mouse-move mouse-wheel mouse-out mouse-over])]
-                                        ;(log "!!!" data2)
                         (when-not (nil? data2)
                           (let [[ev x2 y2] data2
-                                new-co-ord (vec2/vec2 (- x2 left) (- y2 top))
-                                e (-> new-co-ord
-                                      (vec2/sub half-canvas)
-                                      (vec2/sub canvas-offset)
-                                      (vec2/sub half-texture)
-                                      (vec2/scale (/ 1 scale)))
+                                e (canvas->local
+                                   canvas [x2 y2] (getpos-fn)
+                                   [texture-width texture-height]
+                                   (getscale-fn))
+
                                 ]
-                                        ;(log "->" ev x2 y2)
                             (cond
                               (= c2 mouse-up)
                               (log "mouse-up")
@@ -310,41 +312,20 @@ Note: This widget is for representing infinitelives textures
                       scale (getscale-fn)
 
                       co-ord (vec2/vec2 md-x md-y)
-                      half-canvas (vec2/vec2
-                                   (/ (.-width canvas) 2)
-                                   (/ (.-height canvas) 2)) ;; half canvas size
-                      canvas-offset (vec2/vec2 start-x start-y)
-                      half-texture (vec2/vec2 (/ texture-width -2)
-                                              (/ texture-height -2))
-
-                      scaled-half-texture (vec2/scale
-                                           half-texture
-                                           scale) ;; negative half loaded image size
 
                       ;; this pixel has to stay at the cursor position after zoom
-                      local-offset (-> co-ord
-                                       (vec2/sub half-canvas)
-                                       (vec2/sub canvas-offset)
-                                       (vec2/sub scaled-half-texture)
-                                       (vec2/scale (/ 1 scale)))
+                      local-offset (canvas->local
+                                    canvas [x y] (getpos-fn) [texture-width texture-height] (getscale-fn))
 
                       ;; calculate the new canvas offset to keep this pixel there on the canvas
                       new-scale (+ (Math/sign ox) scale)
-                      new-offset (-> local-offset
-                                     (vec2/scale new-scale)
-                                     (vec2/add half-canvas)
-                                     (vec2/add (vec2/scale half-texture new-scale))
-                                     (vec2/sub co-ord)
-                                     (vec2/scale -1))
+                      new-offset (local->canvas canvas local-offset co-ord
+                                                [start-x start-y]
+                                                [texture-width texture-height]
+                                                new-scale)
                       ]
                   ;; this pixel has to stay at the cursor position after zoom
-                  (log "half-texture:" half-texture)
-                  (log "half-canvas:" half-canvas)
-                  (log "co-ord:" co-ord)
-                  (log "canvas-offset:" canvas-offset)
-                  (log "scale:" scale new-scale)
-                  (log "pixel:" local-offset)
-                  (log "new-offset:" new-offset)
+
                   (setpos-fn
                    (vec2/get-x new-offset)
                    (vec2/get-y new-offset))
