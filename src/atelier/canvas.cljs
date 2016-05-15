@@ -490,27 +490,30 @@ Note: This widget is for representing infinitelives textures
                              (apply s/set-pivot! (m/get-layer canv :image) position)
                              (apply s/set-pivot! (m/get-layer canv :fg) position))
 
-                           (.clear image-background)
                            (.clear image-foreground)
 
-                           (draw-chessboard
-                            image-background
-                            :start-x (* scale -0.5 bunny-width)
-                            :start-y (* scale -0.5 bunny-height)
-                            :width (* scale bunny-width)
-                            :height (* scale bunny-height)
-                            :colour-1 0x8080ff
-                            :colour-2 0xa0a0ff
-                            :tile-width 24
-                            :tile-height 24)
+                           (when-not (= (:scale old-state) scale)
+                             (.clear image-background)
 
-                           (doto image-background
+                             (draw-chessboard
+                              image-background
+                              :start-x (* scale -0.5 bunny-width)
+                              :start-y (* scale -0.5 bunny-height)
+                              :width (* scale bunny-width)
+                              :height (* scale bunny-height)
+                              :colour-1 0x8080ff
+                              :colour-2 0xa0a0ff
+                              :tile-width 24
+                              :tile-height 24)
+
+                             (doto image-background
                              (.beginFill empty-colour 0.0)
                              (.lineStyle 1 border-colour)
                              (.drawRect (dec (* scale -0.5 bunny-width))
                                         (dec (* scale -0.5 bunny-height))
                                         (inc (* scale bunny-width))
                                         (inc (* scale bunny-height))))
+                             )
 
                            (loop [[{:keys [pos size]} & t] highlights]
                              ;(.log js/console "pos" pos "size" size)
