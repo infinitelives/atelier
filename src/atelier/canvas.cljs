@@ -602,8 +602,6 @@ Note: This widget is for representing infinitelives textures
   "A basic pixi canvas with changable scale and highlight box. Right click
 and drag to reposition canvas. mouse wheel to zoom. Left click and drag to select.
 
-  # bugs
-  - zoom with mouse wheel should be centered on mouse, not centered on document.
 "
   (fn [data-atom owner]
     (reagent/as-element
