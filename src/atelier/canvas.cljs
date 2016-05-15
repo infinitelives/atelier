@@ -136,9 +136,9 @@ Note: This widget is for representing infinitelives textures
                       mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
                       getpos-fn setpos-fn zoom-fn sethighlight-fn getscale-fn]
   (go
-    (loop []
+    (loop [x 0 y 0]
       (let [[data c] (alts! [mouse-move mouse-up mouse-down mouse-wheel mouse-out mouse-over])]
-        ;(log "data" data "c" c)
+                                        ;(log "data" data "c" c)
         (when-not (nil? data)
           (let [[ev ox oy] data]
             (cond
@@ -150,10 +150,10 @@ Note: This widget is for representing infinitelives textures
                 (log "mouse-down" ox oy (getpos-fn))
                 (loop [x 0 y 0]
                   (let [[data2 c2] (alts! [mouse-up mouse-move mouse-wheel mouse-out mouse-over])]
-                    (log "!!!" data2)
+                                        ;(log "!!!" data2)
                     (when-not (nil? data2)
                       (let [[ev x2 y2] data2]
-                        (log "->" ev x2 y2)
+                                        ;(log "->" ev x2 y2)
                         (cond
                           (= c2 mouse-up)
                           (log "mouse-up")
@@ -174,11 +174,40 @@ Note: This widget is for representing infinitelives textures
                           (= c2 mouse-wheel)
                           (do
                             (log "mouse-wheel 2" x2 x y)
-                            (zoom-fn (Math/sign x2))
-                            (recur x y))
+
+                            (let [
+                                  bounds (.getBoundingClientRect canvas)
+                                  top (.-top bounds)
+                                  left (.-left bounds)
+
+                                  md-x (- x left)
+                                  md-y (- y top)
+
+                                  [start-x start-y] (getpos-fn)
+                                  scale (getscale-fn)
+
+                                  co-ord (vec2/vec2 md-x md-y)
+                                  half-canvas (vec2/vec2
+                                               (/ (.-width canvas) 2)
+                                               (/ (.-height canvas) 2)) ;; half canvas size
+                                  canvas-offset (vec2/vec2 start-x start-y)
+                                  half-texture (vec2/scale
+                                                (vec2/vec2 (/ texture-width -2)
+                                                           (/ texture-height -2))
+                                                scale) ;; negative half loaded image size
+
+                                  local-offset (-> co-ord
+                                                   (vec2/sub half-canvas)
+                                                   (vec2/sub canvas-offset)
+                                                   (vec2/sub half-texture)
+                                                   (vec2/scale (/ 1 scale)))
+                                  ]
+                              (log "pixel:" local-offset)
+                              (zoom-fn (Math/sign x2))
+                              (recur x y)))
                           )))
                     ))
-                (recur))
+                (recur x y))
 
               (and (= c mouse-down)
                    (= 0 (.-button ev)))
@@ -201,34 +230,37 @@ Note: This widget is for representing infinitelives textures
                         scale (getscale-fn)
 
                         co-ord (vec2/vec2 md-x md-y)
-                        c (vec2/vec2 (/ (.-width canvas) 2)
+                        half-canvas (vec2/vec2
+                                     (/ (.-width canvas) 2)
                                      (/ (.-height canvas) 2)) ;; half canvas size
-                        s (vec2/vec2 start-x start-y)
-                        I (vec2/vec2 (/ texture-width -2)
-                                     (/ texture-height -2)) ;; negative half loaded image size
+                        canvas-offset (vec2/vec2 start-x start-y)
+                        half-texture (vec2/scale
+                                      (vec2/vec2 (/ texture-width -2)
+                                                 (/ texture-height -2))
+                                      scale) ;; negative half loaded image size
 
-                        l (-> co-ord
-                              (vec2/sub c)
-                              (vec2/sub s)
-                              (vec2/sub (vec2/scale I scale))
-                              (vec2/scale (/ 1 scale)))
+                        local-offset (-> co-ord
+                                         (vec2/sub half-canvas)
+                                         (vec2/sub canvas-offset)
+                                         (vec2/sub half-texture)
+                                         (vec2/scale (/ 1 scale)))
 
 
                         ]
-                    (log "_" (vec2/get-x l) (vec2/get-y l))
+                                        ;(log "_" (vec2/get-x local-offset) (vec2/get-y local-offset))
                     (loop [x 0 y 0]
                       (let [[data2 c2] (alts! [mouse-up mouse-move mouse-wheel mouse-out mouse-over])]
-                        (log "!!!" data2)
+                                        ;(log "!!!" data2)
                         (when-not (nil? data2)
                           (let [[ev x2 y2] data2
                                 new-co-ord (vec2/vec2 (- x2 left) (- y2 top))
                                 e (-> new-co-ord
-                                      (vec2/sub c)
-                                      (vec2/sub s)
-                                      (vec2/sub (vec2/scale I scale))
+                                      (vec2/sub half-canvas)
+                                      (vec2/sub canvas-offset)
+                                      (vec2/sub half-texture)
                                       (vec2/scale (/ 1 scale)))
                                 ]
-                            (log "->" ev x2 y2)
+                                        ;(log "->" ev x2 y2)
                             (cond
                               (= c2 mouse-up)
                               (log "mouse-up")
@@ -243,8 +275,10 @@ Note: This widget is for representing infinitelives textures
                               (do (log "mouse-move" x2 y2)
 
                                   (sethighlight-fn
-                                   (int (vec2/get-x l)) (int (vec2/get-y l))
-                                   (int (vec2/get-x e)) (int (vec2/get-y e))
+                                   (int (vec2/get-x local-offset))
+                                   (int (vec2/get-y local-offset))
+                                   (int (vec2/get-x e))
+                                   (int (vec2/get-y e))
                                    )
 
                                   (recur x2 y2))
@@ -255,18 +289,75 @@ Note: This widget is for representing infinitelives textures
                               )))
                         )))
 
-                  (recur)))
+                  (recur x y)))
 
               (= c mouse-wheel)
               ;; mouse wheel movement
               (do
-                (log "mousewheel:" (Math/sign ox))
-                (zoom-fn (Math/sign ox))
-                (recur))
+                (log "mousewheel:" (Math/sign ox) )
+
+                (let [
+                      bounds (.getBoundingClientRect canvas)
+                      top (.-top bounds)
+                      left (.-left bounds)
+
+                      md-x (- x left)
+                      md-y (- y top)
+
+                      [start-x start-y] (getpos-fn)
+                      scale (getscale-fn)
+
+                      co-ord (vec2/vec2 md-x md-y)
+                      half-canvas (vec2/vec2
+                                   (/ (.-width canvas) 2)
+                                   (/ (.-height canvas) 2)) ;; half canvas size
+                      canvas-offset (vec2/vec2 start-x start-y)
+                      half-texture (vec2/vec2 (/ texture-width -2)
+                                              (/ texture-height -2))
+
+                      scaled-half-texture (vec2/scale
+                                           half-texture
+                                           scale) ;; negative half loaded image size
+
+                      ;; this pixel has to stay at the cursor position after zoom
+                      local-offset (-> co-ord
+                                       (vec2/sub half-canvas)
+                                       (vec2/sub canvas-offset)
+                                       (vec2/sub scaled-half-texture)
+                                       (vec2/scale (/ 1 scale)))
+
+                      ;; calculate the new canvas offset to keep this pixel there on the canvas
+                      new-scale (+ (Math/sign ox) scale)
+                      new-offset (-> local-offset
+                                     (vec2/scale new-scale)
+                                     (vec2/add half-canvas)
+                                     (vec2/add (vec2/scale half-texture new-scale))
+                                     (vec2/sub co-ord)
+                                     (vec2/scale -1))
+                      ]
+                  ;; this pixel has to stay at the cursor position after zoom
+                  (log "half-texture:" half-texture)
+                  (log "half-canvas:" half-canvas)
+                  (log "co-ord:" co-ord)
+                  (log "canvas-offset:" canvas-offset)
+                  (log "scale:" scale new-scale)
+                  (log "pixel:" local-offset)
+                  (log "new-offset:" new-offset)
+                  (setpos-fn
+                   (vec2/get-x new-offset)
+                   (vec2/get-y new-offset))
+
+                  (zoom-fn (Math/sign ox))
+                  (recur x y)))
+
+              (= c mouse-move)
+              (do
+                                        ;(log "mmove:" ox oy)
+                (recur ox oy))
 
               ;; default
               :default
-              (recur))))
+              (recur x y))))
         )))
   )
 
@@ -291,15 +382,15 @@ Note: This widget is for representing infinitelives textures
                        #(do             ;(log "MM")
                           (put! mouse-move [% (.-clientX %) (.-clientY %)])))
     (.addEventListener el "mousewheel"
-                       #(do (log "MW")
+                       #(do ;(log "MW")
                             (put! mouse-wheel [% (.-wheelDelta %)])
                             (.preventDefault %)))
     (.addEventListener el "mouseout"
-                       #(do (log "MOut")
+                       #(do ;(log "MOut")
                             (put! mouse-out [% (.-clientX %) (.-clientY %)])
                             (.preventDefault %)))
     (.addEventListener el "mouseover"
-                       #(do (log "MOver")
+                       #(do ;(log "MOver")
                             (put! mouse-over [% (.-clientX %) (.-clientY %)])
                             (.preventDefault %)))
 
@@ -439,7 +530,7 @@ Note: This widget is for representing infinitelives textures
                                         (inc (* scale bunny-height))))
 
                            (loop [[{:keys [pos size]} & t] highlights]
-                             (.log js/console "pos" pos "size" size)
+                             ;(.log js/console "pos" pos "size" size)
                              (draw-foreground-rectangle
                               image-foreground scale
                               pos size [texture-width texture-height])
