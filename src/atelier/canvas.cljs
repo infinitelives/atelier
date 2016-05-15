@@ -395,7 +395,9 @@ Note: This widget is for representing infinitelives textures
   )
 
 
-(defn image-canvas-did-mount [data-atom]
+(defn image-canvas-did-mount [data-atom & {:keys [width height]
+                                           :or {width 640
+                                                height 480}}]
   (fn [this]
     (let [canv (c/init
                 {:layers [:bg :image :fg]
@@ -403,7 +405,7 @@ Note: This widget is for representing infinitelives textures
 
                  ;; canvas width and geight from the dom node are wrong at this point
                  ;; so to keep aspect ratio correct we pass them in
-                 :width 640 :height 480
+                 :width width :height height
                  :canvas (reagent/dom-node this)})
           bg-url
                                         ;"/img/peasanttiles01.png"
@@ -530,10 +532,14 @@ Note: This widget is for representing infinitelives textures
                 (<! (e/next-frame))
                 (recur (inc f))))))))))
 
-(defn image-canvas [data-atom]
+(defn image-canvas [data-atom & {:keys [width height]
+                                 :or {width 640
+                                      height 480}}]
   [(with-meta
-     (fn [] [:canvas {:style {:width "640px" :height "480px"}}])
-     {:component-did-mount (image-canvas-did-mount data-atom)})]
+     (fn [] [:canvas {:style {:width (str width "px") :height (str height "px")}}])
+     {:component-did-mount (image-canvas-did-mount data-atom
+                                                   :width width
+                                                   :height height)})]
   )
 
 (defcard card-component-canvas

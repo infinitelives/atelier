@@ -71,7 +71,7 @@ Note: This widget is for representing clojure literals as source code
   "a static highlight/js code display"
   (reagent/as-element [component-static-code-display]))
 
-(defn editor-did-mount [data-atom]
+(defn editor-did-mount [data-atom & {:keys [width height]}]
   (fn [this]
     (let [cm (js/CodeMirror
               (reagent/dom-node this)
@@ -80,6 +80,7 @@ Note: This widget is for representing clojure literals as source code
                    :value (or (:value @data-atom) "")
                    :theme "zenburn"
                    :keyMap "emacs"})]
+      (.setSize cm width "100%")
       (add-watch data-atom nil
                  (fn [key atom old-state new-state]
                    (.log js/console "fn" key atom (str old-state) (str new-state))
@@ -91,6 +92,7 @@ Note: This widget is for representing clojure literals as source code
                      (.setCursor cm (clj->js (:cursor new-state))))))
       (.on cm "change"
            (fn [from to text removed origin]
+             (.log js/console "onChange")
              (.log js/console "change:" (.getValue from) )
              (.log js/console "C:" from to text removed origin)
              (if (not= (.-origin to) "setValue")
@@ -105,7 +107,8 @@ Note: This widget is for representing clojure literals as source code
                    ;; successful parse. TODO: catch error
                    (swap! data-atom assoc :parsed parsed)
                    ))
-               (.log js/console "skipped"))))
+               (.log js/console "skipped"))
+             ))
 
       ;; this gets triggered on add-watch .setValue
       ;; and this screws up devcards 'redo'
@@ -124,10 +127,12 @@ Note: This widget is for representing clojure literals as source code
 
 
 
-(defn editor [data-atom]
+(defn editor [data-atom & {:keys [width height]
+                           :or {width 640
+                                height 480}}]
   [(with-meta
-     (fn [] [:div])
-     {:component-did-mount (editor-did-mount data-atom)
+     (fn [] [:div {:style {:width (str width "px") :height (str height "px")}}])
+     {:component-did-mount (editor-did-mount data-atom :width width :height height)
       :component-will-unmount #(.log js/console "unmount" %)})])
 
 (defcard card-component-editable-display
