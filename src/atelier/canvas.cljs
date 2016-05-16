@@ -301,38 +301,40 @@ Note: This widget is for representing infinitelives textures
               (do
                 (log "mousewheel:" (Math/sign ox) )
 
-                (let [
-                      bounds (.getBoundingClientRect canvas)
-                      top (.-top bounds)
-                      left (.-left bounds)
+                (if (< (getscale-fn) 1)
+                  (recur x y)
+                  (let [
+                        bounds (.getBoundingClientRect canvas)
+                        top (.-top bounds)
+                        left (.-left bounds)
 
-                      md-x (- x left)
-                      md-y (- y top)
+                        md-x (- x left)
+                        md-y (- y top)
 
-                      [start-x start-y] (getpos-fn)
-                      scale (getscale-fn)
+                        [start-x start-y] (getpos-fn)
+                        scale (getscale-fn)
 
-                      co-ord (vec2/vec2 md-x md-y)
+                        co-ord (vec2/vec2 md-x md-y)
 
-                      ;; this pixel has to stay at the cursor position after zoom
-                      local-offset (canvas->local
-                                    canvas [x y] (getpos-fn) [texture-width texture-height] (getscale-fn))
+                        ;; this pixel has to stay at the cursor position after zoom
+                        local-offset (canvas->local
+                                      canvas [x y] (getpos-fn) [texture-width texture-height] (getscale-fn))
 
-                      ;; calculate the new canvas offset to keep this pixel there on the canvas
-                      new-scale (+ (Math/sign ox) scale)
-                      new-offset (local->canvas canvas local-offset co-ord
-                                                [start-x start-y]
-                                                [texture-width texture-height]
-                                                new-scale)
-                      ]
-                  ;; this pixel has to stay at the cursor position after zoom
+                        ;; calculate the new canvas offset to keep this pixel there on the canvas
+                        new-scale (+ (Math/sign ox) scale)
+                        new-offset (local->canvas canvas local-offset co-ord
+                                                  [start-x start-y]
+                                                  [texture-width texture-height]
+                                                  new-scale)
+                        ]
+                    ;; this pixel has to stay at the cursor position after zoom
 
-                  (setpos-fn
-                   (vec2/get-x new-offset)
-                   (vec2/get-y new-offset))
+                    (setpos-fn
+                     (vec2/get-x new-offset)
+                     (vec2/get-y new-offset))
 
-                  (zoom-fn (Math/sign ox))
-                  (recur x y)))
+                    (zoom-fn (Math/sign ox))
+                    (recur x y))))
 
               (= c mouse-move)
               (do
