@@ -60,8 +60,7 @@ Note: This widget is for representing infinitelives textures
     (c/init
      {:layers [:bg :fg]
       :background 0xa0a0a0
-      :canvas (reagent/dom-node this)})
-    ))
+      :canvas (reagent/dom-node this)})))
 
 (defn canvas [data-atom]
   [(with-meta
@@ -70,8 +69,7 @@ Note: This widget is for representing infinitelives textures
 
 (defcard card-component-canvas
   "A basic pixi canvas"
-  (reagent/as-element [canvas (atom nil)])
-  )
+  (reagent/as-element [canvas (atom nil)]))
 
 (defn draw-chessboard
   [gfx & {:keys [start-x start-y width height
@@ -231,9 +229,7 @@ Note: This widget is for representing infinitelives textures
                             (recur x y))
 
                           :default
-                          nil
-                          )))
-                    ))
+                          nil)))))
                 (recur x y))
 
               (and (= c mouse-down)
@@ -258,9 +254,7 @@ Note: This widget is for representing infinitelives textures
                             e (canvas->local
                                canvas [x2 y2] (getpos-fn)
                                [texture-width texture-height]
-                               (getscale-fn))
-
-                            ]
+                               (getscale-fn))]
                         (cond
                           (= c2 mouse-move)
                           (do
@@ -332,29 +326,27 @@ Note: This widget is for representing infinitelives textures
         mouse-over (chan 1)]
     (.addEventListener el "mousedown"
                        #(do
-                                        ;(log "MD")
                           (put! mouse-down [% (.-clientX %) (.-clientY %)])
                           (.preventDefault %)))
     (.addEventListener el "mouseup"
-                       #(do             ;(log "MU")
+                       #(do
                           (put! mouse-up [% (.-clientX %) (.-clientY %)])
                           (.preventDefault %)))
     (.addEventListener el "mousemove"
-                       #(do             ;(log "MM")
+                       #(do
                           (put! mouse-move [% (.-clientX %) (.-clientY %)])))
     (.addEventListener el "mousewheel"
-                       #(do ;(log "MW")
+                       #(do
                             (put! mouse-wheel [% (.-wheelDelta %)])
                             (.preventDefault %)))
     (.addEventListener el "mouseout"
-                       #(do ;(log "MOut")
+                       #(do
                             (put! mouse-out [% (.-clientX %) (.-clientY %)])
                             (.preventDefault %)))
     (.addEventListener el "mouseover"
-                       #(do ;(log "MOver")
+                       #(do
                             (put! mouse-over [% (.-clientX %) (.-clientY %)])
                             (.preventDefault %)))
-
 
     (control-thread el texture-width texture-height
                     mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
@@ -365,19 +357,14 @@ Note: This widget is for representing infinitelives textures
                                            [:highlights 0]
                                            assoc
                                            :pos [x y]
-                                           :size [(- x2 x) (- y2 y)]
-                                                          ))
-                    (fn [] (:scale @data-atom))
-                    )
-    )
-  )
+                                           :size [(- x2 x) (- y2 y)]))
+                    (fn [] (:scale @data-atom)))))
 
 
 (defn image-canvas-did-mount [data-atom & {:keys [width height url]
                                            :or {width 640
                                                 height 480
-                                                url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
-                                                }}]
+                                                url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"}}]
   (fn [this]
     (let [canv (c/init
                 {:layers [:bg :image :fg]
@@ -386,15 +373,13 @@ Note: This widget is for representing infinitelives textures
                  ;; canvas width and geight from the dom node are wrong at this point
                  ;; so to keep aspect ratio correct we pass them in
                  :width width :height height
-                 :canvas (reagent/dom-node this)})
-          ]
+                 :canvas (reagent/dom-node this)})]
       (go
         (<! (r/load-resources canv :fg [url]))
 
         (let [rabbit-texture (r/get-texture
                               (url-keyword url)
-                              :nearest
-                              )
+                              :nearest)
               texture-width (.-width rabbit-texture)
               texture-height (.-height rabbit-texture)
               empty-colour 0x800000
@@ -403,8 +388,7 @@ Note: This widget is for representing infinitelives textures
               bunny-width texture-width
               bunny-height texture-height
               scale (get @data-atom :scale 3)
-              full-colour 0x0000ff
-              ]
+              full-colour 0x0000ff]
           (t/set-texture! :spritesheet rabbit-texture)
 
           (m/with-sprite canv :image
@@ -486,8 +470,7 @@ Note: This widget is for representing infinitelives textures
                              (.drawRect (dec (* scale -0.5 bunny-width))
                                         (dec (* scale -0.5 bunny-height))
                                         (inc (* scale bunny-width))
-                                        (inc (* scale bunny-height))))
-                             )
+                                        (inc (* scale bunny-height)))))
 
                            (loop [[{:keys [pos size]} & t] highlights]
                              ;(.log js/console "pos" pos "size" size)
@@ -495,10 +478,7 @@ Note: This widget is for representing infinitelives textures
                               image-foreground scale
                               pos size [texture-width texture-height])
                              (when (seq t)
-                               (recur t)))
-
-
-                           ))
+                               (recur t)))))
 
               (loop [f 0]
                 (<! (e/next-frame))
@@ -511,13 +491,11 @@ Note: This widget is for representing infinitelives textures
      (fn [] [:canvas {:style {:width (str width "px") :height (str height "px")}}])
      {:component-did-mount (image-canvas-did-mount data-atom
                                                    :width width
-                                                   :height height)})]
-  )
+                                                   :height height)})])
 
 (defcard card-component-canvas
   "A basic pixi canvas with different shape."
-  (reagent/as-element [image-canvas (atom nil)])
-  )
+  (reagent/as-element [image-canvas (atom nil)]))
 
 
 (defcard card-component-canvas
@@ -544,19 +522,13 @@ Note: This widget is for representing infinitelives textures
                  :size [(inc (int (* 10 (rand))))
                         (inc (int (* 10 (rand))))])}
         "highlight"]]]))
-
   {
    :highlights
-   [
-    {:pos [9 12]
-     :size [1 10]}
-    ]
-
+   [{:pos [9 12]
+     :size [1 10]}]
    :scale 3
-
    :offset [0 0]
    }
-
   {:inspect-data true
    :history true
    })
@@ -571,19 +543,12 @@ and drag to reposition canvas. mouse wheel to zoom. Left click and drag to selec
     (reagent/as-element
      [:div
       [image-canvas data-atom]]))
-
   {
    :highlights
-   [
-    {:pos [9 12]
-     :size [1 10]}
-    ]
-
+   [{
+     :pos [9 12]
+     :size [1 10]}]
    :scale 3
-
    :offset [0 0]
    }
-
-  {:inspect-data true
-   ;:history true
-   })
+  {:inspect-data true})
