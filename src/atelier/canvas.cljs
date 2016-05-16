@@ -15,6 +15,7 @@
             [infinitelives.utils.vec2 :as vec2]
             [infinitelives.utils.events :as events]
             [infinitelives.utils.sound :as sound]
+            [infinitelives.utils.string :refer [url-keyword]]
             [infinitelives.utils.console :refer [log]]
 
             [cljs.core.async :refer [<! chan put! alts!]]
@@ -395,9 +396,11 @@ Note: This widget is for representing infinitelives textures
   )
 
 
-(defn image-canvas-did-mount [data-atom & {:keys [width height]
+(defn image-canvas-did-mount [data-atom & {:keys [width height url]
                                            :or {width 640
-                                                height 480}}]
+                                                height 480
+                                                url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
+                                                }}]
   (fn [this]
     (let [canv (c/init
                 {:layers [:bg :image :fg]
@@ -407,20 +410,12 @@ Note: This widget is for representing infinitelives textures
                  ;; so to keep aspect ratio correct we pass them in
                  :width width :height height
                  :canvas (reagent/dom-node this)})
-          bg-url
-                                        ;"/img/peasanttiles01.png"
- ;         "http://www.goodboydigital.com/pixijs/examples/1/bunny.png"
-;"/img/cpcmockup8px.png"
-"https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
           ]
       (go
-        (<! (r/load-resources canv :fg [bg-url]))
+        (<! (r/load-resources canv :fg [url]))
 
         (let [rabbit-texture (r/get-texture
-                              :sprites
-                              ;:cpcmockup8px
-                              ;:bunny
-                              ;:peasanttiles01
+                              (url-keyword url)
                               :nearest
                               )
               texture-width (.-width rabbit-texture)
@@ -433,10 +428,10 @@ Note: This widget is for representing infinitelives textures
               scale (get @data-atom :scale 3)
               full-colour 0x0000ff
               ]
-          (t/set-texture! :rabbit rabbit-texture)
+          (t/set-texture! :spritesheet rabbit-texture)
 
           (m/with-sprite canv :image
-            [rabbit (s/make-sprite :rabbit :scale scale)]
+            [rabbit (s/make-sprite :spritesheet :scale scale)]
             (let [image-background (js/PIXI.Graphics.)
                   image-foreground (js/PIXI.Graphics.)]
               (set! (.-interactive image-background) true)
