@@ -262,8 +262,11 @@ Note: This widget is for representing infinitelives textures
 
                             (recur x2 y2))
 
+                          (= c2 mouse-wheel)
+                          (recur x y)
+
                           :default
-                          (recur x y))))))
+                          nil)))))
 
                 (recur x y))
 
