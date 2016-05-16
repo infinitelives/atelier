@@ -132,8 +132,7 @@ Note: This widget is for representing infinitelives textures
 
 
 (defn canvas->local [canvas [x y] [start-x start-y] [texture-width texture-height] scale]
-  (let [
-        bounds (.getBoundingClientRect canvas)
+  (let [bounds (.getBoundingClientRect canvas)
         top (.-top bounds)
         left (.-left bounds)
 
@@ -154,16 +153,14 @@ Note: This widget is for representing infinitelives textures
                          (vec2/sub half-canvas)
                          (vec2/sub canvas-offset)
                          (vec2/sub half-texture)
-                         (vec2/scale (/ 1 scale)))
-        ]
+                         (vec2/scale (/ 1 scale)))]
     local-offset))
 
 
 (defn local->canvas [canvas local-offset co-ord [start-x start-y]
                      [texture-width texture-height]
                      new-scale]
-  (let [
-        bounds (.getBoundingClientRect canvas)
+  (let [bounds (.getBoundingClientRect canvas)
         top (.-top bounds)
         left (.-left bounds)
 
@@ -180,8 +177,7 @@ Note: This widget is for representing infinitelives textures
                        (vec2/add half-canvas)
                        (vec2/add (vec2/scale half-texture new-scale))
                        (vec2/sub co-ord)
-                       (vec2/scale -1))
-        ]
+                       (vec2/scale -1))]
     new-offset))
 
 
