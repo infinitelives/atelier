@@ -192,162 +192,135 @@ Note: This widget is for representing infinitelives textures
                       getpos-fn setpos-fn zoom-fn sethighlight-fn getscale-fn]
   (go
     (loop [x 0 y 0]
-      (let [[data c] (alts! [mouse-move mouse-up mouse-down mouse-wheel mouse-out mouse-over])]
-                                        ;(log "data" data "c" c)
+      (let [[data c] (alts! [mouse-move
+                             mouse-up
+                             mouse-down
+                             mouse-wheel
+                             mouse-out
+                             mouse-over])]
         (when-not (nil? data)
           (let [[ev ox oy] data]
             (cond
               (and (= c mouse-down)
                    (= 2 (.-button ev)))
-              ;; mouse down
-              (let [[start-x start-y] (getpos-fn)]
 
-                (log "mouse-down" ox oy (getpos-fn))
+              ;; mouse RMB down. drag canvas
+              (let [[start-x start-y] (getpos-fn)]
                 (loop [x 0 y 0]
-                  (let [[data2 c2] (alts! [mouse-up mouse-move mouse-wheel mouse-out mouse-over])]
-                                        ;(log "!!!" data2)
+                  (let [[data2 c2] (alts! [mouse-up
+                                           mouse-move
+                                           mouse-wheel
+                                           mouse-out
+                                           mouse-over])]
                     (when-not (nil? data2)
                       (let [[ev x2 y2] data2]
-                                        ;(log "->" ev x2 y2)
                         (cond
-                          (= c2 mouse-up)
-                          (log "mouse-up")
-
-                          (= c2 mouse-out)
-                          (log "mouse-out")
-
-                          (= c2 mouse-over)
-                          (log "mouse-over")
-
                           (= c2 mouse-move)
-                          (do (log "mouse-move" x2 y2)
-                              (setpos-fn
-                               (+ start-x (- x2 ox))
-                               (+ start-y (- y2 oy)))
-                              (recur x2 y2))
+                          (do
+                            (setpos-fn
+                             (+ start-x (- x2 ox))
+                             (+ start-y (- y2 oy)))
+                            (recur x2 y2))
 
                           (= c2 mouse-wheel)
-                          (do
-                            (log "mouse-wheel 2" x2 x y)
+                          (let [local-offset (canvas->local canvas [x y]
+                                                            (getpos-fn)
+                                                            [texture-width texture-height]
+                                                            (getscale-fn))]
+                            (zoom-fn (Math/sign x2))
+                            (recur x y))
 
-                            (let [local-offset (canvas->local
-                                                canvas [x y] (getpos-fn) [texture-width texture-height] (getscale-fn))
-                                  ]
-                              (log "pixel:" local-offset)
-                              (zoom-fn (Math/sign x2))
-                              (recur x y)))
+                          :default
+                          nil
                           )))
                     ))
                 (recur x y))
 
               (and (= c mouse-down)
                    (= 0 (.-button ev)))
-              (do
-                (let [bounds (.getBoundingClientRect canvas)
-                      top (.-top bounds)
-                      left (.-left bounds)
-                      ]
 
-                  ;;
-                  ;; Mouse left button down and drag
-                  ;;
-                  (log "mouse-down left:" ox oy (- ox left) (- oy top))
+              ;; mouse LMB down. make selection
+              (let [bounds (.getBoundingClientRect canvas)
+                    top (.-top bounds)
+                    left (.-left bounds)
+                    local-offset (canvas->local canvas [ox oy]
+                                                (getpos-fn)
+                                                [texture-width texture-height]
+                                                (getscale-fn))]
+                (loop [x 0 y 0]
+                  (let [[data2 c2] (alts! [mouse-up
+                                           mouse-move
+                                           mouse-wheel
+                                           mouse-out
+                                           mouse-over])]
+                    (when-not (nil? data2)
+                      (let [[ev x2 y2] data2
+                            e (canvas->local
+                               canvas [x2 y2] (getpos-fn)
+                               [texture-width texture-height]
+                               (getscale-fn))
 
-                  (let [local-offset (canvas->local
-                                      canvas [ox oy] (getpos-fn) [texture-width texture-height] (getscale-fn))
-                        ]
-                    (loop [x 0 y 0]
-                      (let [[data2 c2] (alts! [mouse-up mouse-move mouse-wheel mouse-out mouse-over])]
-                        (when-not (nil? data2)
-                          (let [[ev x2 y2] data2
-                                e (canvas->local
-                                   canvas [x2 y2] (getpos-fn)
-                                   [texture-width texture-height]
-                                   (getscale-fn))
+                            ]
+                        (cond
+                          (= c2 mouse-move)
+                          (do
+                            (sethighlight-fn
+                             (int (vec2/get-x local-offset))
+                             (int (vec2/get-y local-offset))
+                             (int (vec2/get-x e))
+                             (int (vec2/get-y e)))
 
-                                ]
-                            (cond
-                              (= c2 mouse-up)
-                              (log "mouse-up")
+                            (recur x2 y2))
 
-                              (= c2 mouse-out)
-                              (log "mouse-out")
+                          :default
+                          (recur x y))))))
 
-                              (= c2 mouse-over)
-                              (log "mouse-over")
-
-                              (= c2 mouse-move)
-                              (do (log "mouse-move" x2 y2)
-
-                                  (sethighlight-fn
-                                   (int (vec2/get-x local-offset))
-                                   (int (vec2/get-y local-offset))
-                                   (int (vec2/get-x e))
-                                   (int (vec2/get-y e))
-                                   )
-
-                                  (recur x2 y2))
-
-                              :default
-                              (recur x y)
-
-                              )))
-                        )))
-
-                  (recur x y)))
+                (recur x y))
 
               (= c mouse-wheel)
               ;; mouse wheel movement
-              (do
-                (log "mousewheel:" (Math/sign ox) )
+              (let [bounds (.getBoundingClientRect canvas)
+                    top (.-top bounds)
+                    left (.-left bounds)
 
-                (let [
-                      bounds (.getBoundingClientRect canvas)
-                      top (.-top bounds)
-                      left (.-left bounds)
+                    md-x (- x left)
+                    md-y (- y top)
 
-                      md-x (- x left)
-                      md-y (- y top)
+                    [start-x start-y] (getpos-fn)
+                    scale (getscale-fn)
 
-                      [start-x start-y] (getpos-fn)
-                      scale (getscale-fn)
+                    co-ord (vec2/vec2 md-x md-y)
 
-                      co-ord (vec2/vec2 md-x md-y)
-
-                      ;; this pixel has to stay at the cursor position after zoom
-                      local-offset (canvas->local
-                                    canvas [x y] (getpos-fn) [texture-width texture-height] (getscale-fn))
-
-                      ;; calculate the new canvas offset to keep this pixel there on the canvas
-                      new-scale (+ (Math/sign ox) scale)
-                      new-offset (local->canvas canvas local-offset co-ord
-                                                [start-x start-y]
+                    ;; this pixel has to stay at the cursor position after zoom
+                    local-offset (canvas->local canvas [x y]
+                                                (getpos-fn)
                                                 [texture-width texture-height]
-                                                new-scale)
-                      ]
-                  ;; this pixel has to stay at the cursor position after zoom
+                                                (getscale-fn))
 
-                  (if (>= new-scale 1)
-                    (do
+                    ;; calculate the new canvas offset to keep this pixel there on the canvas
+                    new-scale (+ (Math/sign ox) scale)
+                    new-offset (local->canvas canvas local-offset co-ord
+                                              [start-x start-y]
+                                              [texture-width texture-height]
+                                              new-scale)]
+                ;; this pixel has to stay at the cursor position after zoom
+                (if (>= new-scale 1)
+                  (do
 
-                      (setpos-fn
-                       (vec2/get-x new-offset)
-                       (vec2/get-y new-offset))
+                    (setpos-fn
+                     (vec2/get-x new-offset)
+                     (vec2/get-y new-offset))
 
-                      (zoom-fn (Math/sign ox))
-                      (recur x y))
-                    (recur x y))))
+                    (zoom-fn (Math/sign ox))
+                    (recur x y))
+                  (recur x y)))
 
               (= c mouse-move)
-              (do
-                                        ;(log "mmove:" ox oy)
-                (recur ox oy))
+              (recur ox oy)
 
               ;; default
               :default
-              (recur x y))))
-        )))
-  )
+              (recur x y))))))))
 
 
 (defn canvas-control [el data-atom texture-width texture-height]
