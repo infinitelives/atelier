@@ -3,9 +3,12 @@
             [atelier.canvas :as canvas]
             [atelier.code :as code]
 
+            [infinitelives.utils.console :refer [log]]
+            [cljs.core.async :refer [<! chan put! alts!]]
             )
   (:require-macros
-   [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]])
+   [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]]
+   [cljs.core.async.macros :refer [go]])
   )
 
 (enable-console-print!)
@@ -48,53 +51,123 @@
    :offset [0 0]
    }))
 
+(defonce screen-state
+  (reagent/atom
+   {
+    :split-x 200
+    }))
+
+(defn partitioner-thread [el mouse-down mouse-up mouse-move]
+  (go
+    (loop []
+      (log ".")
+      (let [[data c] (alts! [mouse-up mouse-down mouse-move])]
+        (when-not (nil? data)
+          (let [[ev ox oy] data]
+            (cond
+              (= c mouse-down)
+              ;; mouse down. drag
+              (do
+                (log "!" ox oy)
+                (loop []
+                  (let [[data2 c2] (alts! [mouse-up mouse-down mouse-move])]
+                    (when-not (nil? data2)
+                      (let [[ev x2 y2] data2]
+                        (cond
+                          (= c2 mouse-move)
+                          (let [inner (.-innerWidth js/window)]
+                            (log "partition drag" x2 y2)
+
+                            (swap! screen-state assoc :split-x (- x2 10))
+                            (recur))
+
+                          (= c2 mouse-down)
+                          (recur)
+
+                          (= c2 mouse-up)
+                          nil)))))
+                (recur))
+
+              :default
+              (recur))))))))
+
+
+(defn partitioner-control [el data-atom]
+  (log "pc")
+  (let [mouse-down (chan 1)
+        mouse-up (chan 1)
+        mouse-move (chan 1)]
+    (.addEventListener el "mousedown"
+                       #(do
+                          (put! mouse-down [% (.-clientX %) (.-clientY %)])
+                          (.preventDefault %)))
+    (.addEventListener el "mouseup"
+                       #(do
+                          (put! mouse-up [% (.-clientX %) (.-clientY %)])
+                          (.preventDefault %)))
+    (.addEventListener el "mousemove"
+                       #(do
+                          (put! mouse-move [% (.-clientX %) (.-clientY %)])))
+
+    (partitioner-thread el mouse-down mouse-up mouse-move)))
+
+(defn partitioner-did-mount [data-atom]
+  (fn [this]
+    (partitioner-control (reagent/dom-node this) data-atom)))
+
+(defn partitioner [data-atom]
+  [(with-meta
+     (fn [] [:div {:style {:position "absolute"
+                           :display "block"
+                                        ;:height "739px"
+                           :width "20px"
+                           :visibility "visible"
+                           :overflow "visible"
+                           :border "1px solid black"
+                           :background-color "#aaa"
+
+                           :margin "0px"
+                           :left (str (:split-x @data-atom) "px")
+                           :right "0px"
+                           :top "0px"
+                           :bottom "0px"
+                           }}])
+     {:component-did-mount (partitioner-did-mount data-atom)} )])
+
 (defn simple-component []
-  [:div
+  (let [y (.-innerHeight js/window)]
+    [:div
+     [:div {:style {:position "absolute"
+                    :display "block"
+                    :width "100%"
+                    :visibility "visible"
+                    :overflow "visible"
 
-   [:div {:style {:position "absolute"
-                  :display "block"
-                  :width "100%"
-                  :visibility "visible"
-                  :overflow "visible"
+                    :margin "0px"
+                    :left "0px"
+                    :right "auto"
+                    :top "0px"
+                    }}
+      (canvas/image-canvas canvas-state :width (:split-x @screen-state) :height y)]
 
-                  :margin "0px"
-                  :left "0px"
-                  :right "auto"
-                  :top "0px"
-                  }}
-    (canvas/image-canvas canvas-state :width 1190 :height 900)]
+     [partitioner screen-state]
 
-    [:div {:style {:position "absolute"
-                  :display "block"
-                  ;:height "739px"
-                  :width "10px"
-                  :visibility "visible"
-                  :overflow "visible"
-                  :border "1px solid black"
-                  :background-color "#aaa"
+     [:div {:style {:position "absolute"
+                    :display "block"
+                     ;                   :height "739px"
+                    :width "*"
+                    :height (str y "px")
+                    :visibility "visible"
+                    :overflow "visible"
 
-                  :margin "0px"
-                  :left "1190px"
-                  :right "0px"
-                  :top "0px"
-                  :bottom "0px"
-                  }}]
-
-   [:div {:style {:position "absolute"
-                  :display "block"
-                  ;:height "739px"
-                  :width "*"
-                  :visibility "visible"
-                  :overflow "visible"
-
-                  :margin "0px"
-                  :left "1202px"
-                  :right "0px"
-                  :top "0px"
-                  ;:bottom "0px"
-                  }}
-    (code/editor editor-state :width 705 :height 900)]
-   ])
+                    :margin "0px"
+                    :left (str (+ 2 20 (:split-x @screen-state)) "px")
+                    :right "0px"
+                    :top "0px"
+                                        ;:bottom "0px"
+                    }}
+      (code/editor editor-state :width 200 :height y)]
+     ]))
 
 (defn render-simple []
   (reagent/render-component
