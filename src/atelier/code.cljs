@@ -4,7 +4,7 @@
             [cljsjs.codemirror]
             [cljsjs.codemirror.mode.clojure]
             [cljsjs.codemirror.keymap.emacs]
-
+            [infinitelives.utils.console :refer [log]]
 )
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]])
@@ -131,9 +131,17 @@ Note: This widget is for representing clojure literals as source code
                            :or {width 640
                                 height 480}}]
   [(with-meta
-     (fn [] [:div {:style {:width (str width "px") :height (str height "px")}}])
+     (fn [] [:div {:style {:width (str width "px")
+                           :height (str height "px")
+                           }}])
      {:component-did-mount (editor-did-mount data-atom :width width :height height)
-      :component-will-unmount #(.log js/console "unmount" %)})])
+
+      :component-will-mount #(log "code-component-will-mount")
+      :component-will-update #(log "code-component-will-update")
+      :component-did-update #(log "code-component-did-update")
+      :component-will-unmount #(log "code-component-will-unmount")
+
+})])
 
 (defcard card-component-editable-display
   "reloadable, editable code entry"

@@ -365,6 +365,7 @@ Note: This widget is for representing infinitelives textures
                                                 height 480
                                                 url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"}}]
   (fn [this]
+    (log "component-did-mount")
     (let [canv (c/init
                 {:layers [:bg :image :fg]
                  :background 0x404040
@@ -488,9 +489,16 @@ Note: This widget is for representing infinitelives textures
                                       height 480}}]
   [(with-meta
      (fn [] [:canvas {:style {:width (str width "px") :height (str height "px")}}])
-     {:component-did-mount (image-canvas-did-mount data-atom
-                                                   :width width
-                                                   :height height)})])
+     {:component-did-mount
+      (image-canvas-did-mount data-atom
+                              :width width
+                              :height height)
+      :component-will-mount #(log "component-will-mount")
+      :component-will-update #(log "component-will-update")
+      :component-did-update #(log "component-did-update")
+      :component-will-unmount #(log "component-will-unmount")
+
+})])
 
 (defcard card-component-canvas
   "A basic pixi canvas with different shape."
