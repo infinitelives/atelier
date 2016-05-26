@@ -101,11 +101,11 @@
                        #(do
                           (put! mouse-down [% (.-clientX %) (.-clientY %)])
                           (.preventDefault %)))
-    (.addEventListener el "mouseup"
+    (.addEventListener js/window "mouseup"
                        #(do
                           (put! mouse-up [% (.-clientX %) (.-clientY %)])
                           (.preventDefault %)))
-    (.addEventListener el "mousemove"
+    (.addEventListener js/window "mousemove"
                        #(do
                           (put! mouse-move [% (.-clientX %) (.-clientY %)])))
 
@@ -120,7 +120,7 @@
      (fn [] [:div {:style {:position "absolute"
                            :display "block"
                                         ;:height "739px"
-                           :width "20px"
+                           :width "12px"
                            :visibility "visible"
                            :overflow "visible"
                            :border "1px solid black"
@@ -161,12 +161,12 @@
                     :overflow "visible"
 
                     :margin "0px"
-                    :left (str (+ 2 20 (:split-x @screen-state)) "px")
+                    :left (str (+ 2 12 (:split-x @screen-state)) "px")
                     :right "0px"
                     :top "0px"
                                         ;:bottom "0px"
                     }}
-      (code/editor editor-state :width 200 :height y)]
+      (code/editor editor-state :width (- 1024 (:split-x @screen-state)) :height y)]
      ]))
 
 (defn render-simple []
