@@ -44,6 +44,6 @@ Then point your browser at [localhost:3449/cards.html](http://localhost:3449/car
 
 ## License
 
-Copyright © 2014 FIXME
+Copyright © 2016 Crispin Wellington
 
 Distributed under the Eclipse Public License either version 1.0 or (at your option) any later version.
