@@ -361,8 +361,8 @@ Note: This widget is for representing infinitelives textures
 
 
 (defn image-canvas-did-mount [data-atom & {:keys [width height url]
-                                           :or {width 640
-                                                height 480
+                                           :or {width "*"
+                                                height "*"
                                                 url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"}}]
   (fn [this]
     (log "component-did-mount")
@@ -439,8 +439,18 @@ Note: This widget is for representing infinitelives textures
               ;; up on load unless we remove them
               (add-watch data-atom :dummy
                          (fn [key atom old-state
-                              {:keys [scale highlights offset]}]
+                              {:keys [scale highlights offset width height]}]
                            (s/set-scale! rabbit scale)
+
+                           ;(log "W:" width "H:" height)
+
+                           (when width
+                             (log "setting width:" width)
+                             (set! (.-style.width (:canvas canv)) (str width))
+                             ((:resize-fn canv)
+                              width (.-innerHeight js/window)
+                              )
+                             )
 
                            (let [[x y] offset
                                  position [(- x) (- y)]]
@@ -484,15 +494,11 @@ Note: This widget is for representing infinitelives textures
                 (<! (e/next-frame))
                 (recur (inc f))))))))))
 
-(defn image-canvas [data-atom & {:keys [width height]
-                                 :or {width 640
-                                      height 480}}]
+(defn image-canvas [data-atom]
   [(with-meta
-     (fn [] [:canvas {:style {:width (str width "px") :height (str height "px")}}])
+     (fn [] [:canvas])
      {:component-did-mount
-      (image-canvas-did-mount data-atom
-                              :width width
-                              :height height)
+      (image-canvas-did-mount data-atom)
       :component-will-mount #(log "component-will-mount")
       :component-will-update #(log "component-will-update")
       :component-did-update #(log "component-did-update")
@@ -510,25 +516,25 @@ Note: This widget is for representing infinitelives textures
   (fn [data-atom owner]
     (reagent/as-element
      [:div
-      [image-canvas data-atom]
-      [:p "scale: "
-       [:button {:on-click #(swap! data-atom update :scale dec)} "-"]
-       [:button {:on-click #(swap! data-atom update :scale inc)} "+"]]
-      [:p "offset: "
-       [:button {:on-click #(swap! data-atom update-in [:offset 0] - 5)} "left"]
-       [:button {:on-click #(swap! data-atom update-in [:offset 0] + 5)} "right"]
-       [:button {:on-click #(swap! data-atom update-in [:offset 1] - 5)} "up"]
-       [:button {:on-click #(swap! data-atom update-in [:offset 1] + 5)} "down"]]
-      [:p
-       [:button
-        {:on-click
-         #(swap! data-atom update-in [:highlights 0]
-                 assoc
-                 :pos [(int (* 24 (rand)))
-                       (int (* 24 (rand)))]
-                 :size [(inc (int (* 10 (rand))))
-                        (inc (int (* 10 (rand))))])}
-        "highlight"]]]))
+          [image-canvas data-atom]
+          [:p "scale: "
+           [:button {:on-click #(swap! data-atom update :scale dec)} "-"]
+           [:button {:on-click #(swap! data-atom update :scale inc)} "+"]]
+          [:p "offset: "
+           [:button {:on-click #(swap! data-atom update-in [:offset 0] - 5)} "left"]
+           [:button {:on-click #(swap! data-atom update-in [:offset 0] + 5)} "right"]
+           [:button {:on-click #(swap! data-atom update-in [:offset 1] - 5)} "up"]
+           [:button {:on-click #(swap! data-atom update-in [:offset 1] + 5)} "down"]]
+          [:p
+           [:button
+            {:on-click
+             #(swap! data-atom update-in [:highlights 0]
+                     assoc
+                     :pos [(int (* 24 (rand)))
+                           (int (* 24 (rand)))]
+                     :size [(inc (int (* 10 (rand))))
+                            (inc (int (* 10 (rand))))])}
+            "highlight"]]]))
   {
    :highlights
    [{:pos [9 12]
