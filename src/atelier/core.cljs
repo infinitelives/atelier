@@ -60,6 +60,12 @@
     :split-x 200
     }))
 
+(defn update-atoms! [x]
+  (let [height (.-innerHeight js/window)]
+    (swap! screen-state assoc :split-x x)
+    (swap! editor-state assoc :width x :height height)
+    (swap! canvas-state assoc :width x)))
+
 (defn partitioner-thread [el mouse-down mouse-up mouse-move]
   (go
     (loop []
@@ -78,10 +84,16 @@
                       (let [[ev x2 y2] data2]
                         (cond
                           (= c2 mouse-move)
-                          (let [inner (.-innerWidth js/window)]
+                          (let [inner (.-innerWidth js/window)
+                                height (.-innerHeight js/window)]
                             (log "partition drag" x2 y2)
 
-                            (swap! screen-state assoc :split-x (- x2 10))
+                            (update-atoms! (- x2 10))
+
+                            ;; this is the wrong place... just to
+                            ;; test if the appearing space was scrolling
+                            (.scrollTo js/window 0 0)
+
                             (recur))
 
                           (= c2 mouse-down)
@@ -141,22 +153,23 @@
   (let [y (.-innerHeight js/window)]
     [:div
      [:div {:style {:position "absolute"
-                    :display "block"
-                    :width "100%"
+                    ;:display "block"
+                    ;:width "100%"
                     :visibility "visible"
                     :overflow "visible"
 
                     :margin "0px"
                     :left "0px"
-                    :right "auto"
+                    ;:right "auto"
                     :top "0px"
                     }}
-      (canvas/image-canvas canvas-state :width (:split-x @screen-state) :height y)]
+      [canvas/image-canvas canvas-state
+       ]]
 
      [partitioner screen-state]
 
-     [:div {:style {:position "absolute"
-                    :display "block"
+     [:div #_ {:style {:position "absolute"
+                    ;:display "block"
                      ;                   :height "739px"
                     :width "*"
                     :height (str y "px")
@@ -164,12 +177,12 @@
                     :overflow "visible"
 
                     :margin "0px"
-                    :left (str (+ 2 12 (:split-x @screen-state)) "px")
+                    ;:left (str (+ 2 12 (:split-x @screen-state)) "px")
                     :right "0px"
                     :top "0px"
                                         ;:bottom "0px"
                     }}
-      (code/editor editor-state :width (- 1024 (:split-x @screen-state)) :height y)]
+      (code/editor editor-state)]
      ]))
 
 (defn render-simple []
@@ -178,3 +191,16 @@
    (.getElementById js/document "app")))
 
 (render-simple)
+
+(update-atoms! (int (* (.-innerWidth js/window) 0.75)))
+
+(go (let [c (events/new-resize-chan)]
+      (while true
+        (<! c)
+        (update-atoms! (:split-x @screen-state))
+        )
+      ))
+
+;; hacky bugfix
+(go (<! (timeout 2000))
+    (update-atoms! (int (* (.-innerWidth js/window) 0.7))))
