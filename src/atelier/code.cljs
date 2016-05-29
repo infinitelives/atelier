@@ -73,8 +73,9 @@ Note: This widget is for representing clojure literals as source code
 
 (defn editor-did-mount [data-atom & {:keys [width height]}]
   (fn [this]
-    (let [cm (js/CodeMirror
-              (reagent/dom-node this)
+    (let [node (reagent/dom-node this)
+          cm (js/CodeMirror
+              node
               #js {:mode "clojure"
                    :lineNumbers true
                    :value (or (:value @data-atom) "")
@@ -85,11 +86,26 @@ Note: This widget is for representing clojure literals as source code
                  (fn [key atom old-state new-state]
                    (.log js/console "fn" key atom (str old-state) (str new-state))
                    (when (not= old-state new-state)
-                     (.log js/console "setValue")
-                     ;; this setValue needs to NOT trigger an onchange
-                     (.setValue cm (:value new-state))
-                     (.log js/console "setCursor")
-                     (.setCursor cm (clj->js (:cursor new-state))))))
+
+                     (when (and (:width new-state) (:height new-state))
+                       (.log js/console "set size")
+                       (.setSize cm
+                                 (- (.-innerWidth js/window) (:width new-state) 18)
+                                 (- (:height new-state) 2))
+                       (set! (.-display.wrapper.style.left cm)
+                             (str (+ 2 12 (:width new-state)) "px"))
+                       )
+
+                                        ;(+ 2 12 (:split-x @screen-state))
+
+                     (when (not= (:value new-state) (:value old-state))
+                       (.log js/console "setValue")
+                       ;; this setValue needs to NOT trigger an onchange
+                       (.setValue cm (:value new-state)))
+
+                     (when (not= (:cursor new-state) (:cursor old-state))
+                       (.log js/console "setCursor")
+                       (.setCursor cm (clj->js (:cursor new-state)))))))
       (.on cm "change"
            (fn [from to text removed origin]
              (.log js/console "onChange")
@@ -98,11 +114,11 @@ Note: This widget is for representing clojure literals as source code
              (if (not= (.-origin to) "setValue")
                (do
                  (swap! data-atom assoc
-                          :value (.getValue from)
-                          :cursor (let [curs (.getCursor cm "head")]
-                                    (.log js/console "curs" curs)
-                                    {:line (.-line curs)
-                                     :ch (.-ch curs)}))
+                        :value (.getValue from)
+                        :cursor (let [curs (.getCursor cm "head")]
+                                  (.log js/console "curs" curs)
+                                  {:line (.-line curs)
+                                   :ch (.-ch curs)}))
                  (let [parsed (read-string (.getValue from))]
                    ;; successful parse. TODO: catch error
                    (swap! data-atom assoc :parsed parsed)
@@ -114,15 +130,15 @@ Note: This widget is for representing clojure literals as source code
       ;; and this screws up devcards 'redo'
       ;; TODO: filter out the unneeded events like in on change above
       #_ (.on cm "cursorActivity"
-           #(do
-              (.log js/console "cursorActivity")
-              (swap! data-atom assoc
-                     :cursor (let [curs (.getCursor cm "head")]
-                               (.log js/console "curs" curs)
-                               {:line (.-line curs)
-                                :ch (.-ch curs)})
-                     )
-              ))
+              #(do
+                 (.log js/console "cursorActivity")
+                 (swap! data-atom assoc
+                        :cursor (let [curs (.getCursor cm "head")]
+                                  (.log js/console "curs" curs)
+                                  {:line (.-line curs)
+                                   :ch (.-ch curs)})
+                        )
+                 ))
       )))
 
 
@@ -135,7 +151,6 @@ Note: This widget is for representing clojure literals as source code
                            :height (str height "px")
                            }}])
      {:component-did-mount (editor-did-mount data-atom :width width :height height)
-
       :component-will-mount #(log "code-component-will-mount")
       :component-will-update #(log "code-component-will-update")
       :component-did-update #(log "code-component-did-update")
