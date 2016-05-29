@@ -1,10 +1,12 @@
 # atelier
 
-FIXME: Write a one-line description of your library/project.
+Atelier is an asset generation toolbox for the infinitelives clojurescipt game framework.
 
 ## Overview
 
-FIXME: Write a paragraph about the library/project and highlight its goals.
+Presently this can not be used to make any assets, but the base application structure is tested and you can see the present state of the app at the following link:
+
+[Launch Atelier!](https://infinitelives.github.io/atelier/)
 
 ## Setup
 
