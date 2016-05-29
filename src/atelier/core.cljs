@@ -152,38 +152,11 @@
 (defn simple-component []
   (let [y (.-innerHeight js/window)]
     [:div
-     [:div {:style {:position "absolute"
-                    ;:display "block"
-                    ;:width "100%"
-                    :visibility "visible"
-                    :overflow "visible"
-
-                    :margin "0px"
-                    :left "0px"
-                    ;:right "auto"
-                    :top "0px"
-                    }}
-      [canvas/image-canvas canvas-state
-       ]]
-
+     [:div#main-canvas {:style {:position "absolute"}}
+      [canvas/image-canvas canvas-state]]
      [partitioner screen-state]
-
-     [:div #_ {:style {:position "absolute"
-                    ;:display "block"
-                     ;                   :height "739px"
-                    :width "*"
-                    :height (str y "px")
-                    :visibility "visible"
-                    :overflow "visible"
-
-                    :margin "0px"
-                    ;:left (str (+ 2 12 (:split-x @screen-state)) "px")
-                    :right "0px"
-                    :top "0px"
-                                        ;:bottom "0px"
-                    }}
-      (code/editor editor-state)]
-     ]))
+     [:div#code-editor
+      (code/editor editor-state)]]))
 
 (defn render-simple []
   (reagent/render-component
@@ -194,12 +167,11 @@
 
 (update-atoms! (int (* (.-innerWidth js/window) 0.75)))
 
-(go (let [c (events/new-resize-chan)]
-      (while true
-        (<! c)
-        (update-atoms! (:split-x @screen-state))
-        )
-      ))
+(defonce resize-thread
+  (go (let [c (events/new-resize-chan)]
+        (while true
+          (<! c)
+          (update-atoms! (:split-x @screen-state))))))
 
 ;; hacky bugfix
 (go (<! (timeout 2000))
