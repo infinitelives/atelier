@@ -4,7 +4,8 @@
             [atelier.code :as code]
 
             [infinitelives.utils.console :refer [log]]
-            [cljs.core.async :refer [<! chan put! alts!]]
+            [infinitelives.utils.events :as events]
+            [cljs.core.async :refer [<! chan put! alts! timeout]]
             )
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]]
@@ -31,10 +32,10 @@
   (swap! ratom update-in [:count] inc))
 
 (defonce editor-state (reagent/atom {:value "{
-  :foo
-  {
-    :size [8 8]
-    :pos [8 8]
+  :foo {:size [8 8] :pos [8 8]}
+  :bar {
+    :size [16 16]
+    :pos [24 24]
   }
 }"
                                      :cursor {:line 1 :ch 0}}))
@@ -49,6 +50,8 @@
    :scale 3
 
    :offset [0 0]
+   :width 200
+   :height 400
    }))
 
 (defonce screen-state
