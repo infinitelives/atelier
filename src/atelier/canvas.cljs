@@ -306,22 +306,22 @@
                        #(do
                           (put! mouse-down [% (.-clientX %) (.-clientY %)])
                           (.preventDefault %)))
-    (.addEventListener el "mouseup"
+    (.addEventListener js/window "mouseup"
                        #(do
                           (put! mouse-up [% (.-clientX %) (.-clientY %)])
                           (.preventDefault %)))
-    (.addEventListener el "mousemove"
+    (.addEventListener js/window "mousemove"
                        #(do
                           (put! mouse-move [% (.-clientX %) (.-clientY %)])))
     (.addEventListener el "mousewheel"
                        #(do
                             (put! mouse-wheel [% (.-wheelDelta %)])
                             (.preventDefault %)))
-    (.addEventListener el "mouseout"
+    #_ (.addEventListener el "mouseout"
                        #(do
                             (put! mouse-out [% (.-clientX %) (.-clientY %)])
                             (.preventDefault %)))
-    (.addEventListener el "mouseover"
+    #_ (.addEventListener el "mouseover"
                        #(do
                             (put! mouse-over [% (.-clientX %) (.-clientY %)])
                             (.preventDefault %)))
