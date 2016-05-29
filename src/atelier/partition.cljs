@@ -12,7 +12,7 @@
    [cljs.core.async.macros :refer [go]])
   )
 
-(defn partitioner-thread [el mouse-down mouse-up mouse-move]
+(defn control-thread [el mouse-down mouse-up mouse-move update-fn]
   (go
     (loop []
       (let [[data c] (alts! [mouse-up mouse-down mouse-move])]
@@ -30,7 +30,7 @@
                           (= c2 mouse-move)
                           (let [inner (.-innerWidth js/window)
                                 height (.-innerHeight js/window)]
-                            (atelier.core/update-atoms! (- x2 10))
+                            (update-fn (- x2 10))
 
                             ;; this is the wrong place... just to
                             ;; test if the appearing space was scrolling
@@ -48,7 +48,7 @@
               :default
               (recur))))))))
 
-(defn partitioner-control [el data-atom]
+(defn partitioner-control [el data-atom update-fn]
   (let [mouse-down (chan 1)
         mouse-up (chan 1)
         mouse-move (chan 1)]
@@ -64,13 +64,13 @@
                        #(do
                           (put! mouse-move [% (.-clientX %) (.-clientY %)])))
 
-    (partitioner-thread el mouse-down mouse-up mouse-move)))
+    (control-thread el mouse-down mouse-up mouse-move update-fn)))
 
-(defn partitioner-did-mount [data-atom]
+(defn partitioner-did-mount [data-atom update-fn]
   (fn [this]
-    (partitioner-control (reagent/dom-node this) data-atom)))
+    (partitioner-control (reagent/dom-node this) data-atom update-fn)))
 
-(defn partitioner [data-atom]
+(defn partitioner [data-atom update-fn]
   [(with-meta
      (fn [] [:div {:style {:position "absolute"
                            :display "block"
@@ -87,4 +87,4 @@
                            :top "0px"
                            :bottom "0px"
                            }}])
-     {:component-did-mount (partitioner-did-mount data-atom)} )])
+     {:component-did-mount (partitioner-did-mount data-atom update-fn)} )])

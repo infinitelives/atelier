@@ -59,7 +59,7 @@
     [:div
      [:div#main-canvas {:style {:position "absolute"}}
       [canvas/image-canvas canvas-state]]
-     [partition/partitioner screen-state]
+     [partition/partitioner screen-state update-atoms!]
      [:div#code-editor
       (code/editor editor-state)]]))
 
