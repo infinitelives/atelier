@@ -35,26 +35,6 @@
 
 (enable-console-print!)
 
-(println "Edits to this text should show up in your developer console.")
-
-  ;; define your app data so that it doesn't get over-written on reload
-
-
-(defonce app-state (atom {:text "Hello world!"}))
-
-
-(defn on-js-reload []
-  ;; optionally touch your app-state to force rerendering depending on
-  ;; your application
-  ;; (swap! app-state update-in [:__figwheel_counter] inc)
-  )
-
-(defcard-doc
-  "
-## Canvas
-Note: This widget is for representing infinitelives textures
-")
-
 (defn canvas-did-mount [data-atom]
   (fn [this]
     (c/init
@@ -101,7 +81,6 @@ Note: This widget is for representing infinitelives textures
            bottom (min
                    (+ start-y (* tile-height (inc cy)))
                    (+ start-y height))]
-       ;(.log js/console cx cy)
        (doto gfx
          (.beginFill colour-2)
          (.lineStyle 0 0x000000)
@@ -360,10 +339,8 @@ Note: This widget is for representing infinitelives textures
                     (fn [] (:scale @data-atom)))))
 
 
-(defn image-canvas-did-mount [data-atom & {:keys [width height url]
-                                           :or {width "*"
-                                                height "*"
-                                                url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"}}]
+(defn image-canvas-did-mount [data-atom & {:keys [url]
+                                           :or {url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"}}]
   (fn [this]
     (log "component-did-mount")
     (let [canv (c/init
@@ -372,7 +349,8 @@ Note: This widget is for representing infinitelives textures
 
                  ;; canvas width and geight from the dom node are wrong at this point
                  ;; so to keep aspect ratio correct we pass them in
-                 :width width :height height
+                 ;:width width :height height
+
                  :canvas (reagent/dom-node this)})]
       (go
         (<! (r/load-resources canv :fg [url]))
@@ -505,6 +483,15 @@ Note: This widget is for representing infinitelives textures
       :component-will-unmount #(log "component-will-unmount")
 
 })])
+
+;;
+;; Devcards
+;;
+(defcard-doc
+  "
+## Canvas
+Note: This widget is for representing infinitelives textures
+")
 
 (defcard card-component-canvas
   "A basic pixi canvas with different shape."
