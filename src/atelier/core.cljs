@@ -2,6 +2,7 @@
   (:require [reagent.core :as reagent]
             [atelier.canvas :as canvas]
             [atelier.code :as code]
+            [atelier.partition :as partition]
 
             [infinitelives.utils.console :refer [log]]
             [infinitelives.utils.events :as events]
@@ -53,95 +54,12 @@
     (swap! editor-state assoc :width x :height height)
     (swap! canvas-state assoc :width x)))
 
-(defn partitioner-thread [el mouse-down mouse-up mouse-move]
-  (go
-    (loop []
-      (log ".")
-      (let [[data c] (alts! [mouse-up mouse-down mouse-move])]
-        (when-not (nil? data)
-          (let [[ev ox oy] data]
-            (cond
-              (= c mouse-down)
-              ;; mouse down. drag
-              (do
-                (log "!" ox oy)
-                (loop []
-                  (let [[data2 c2] (alts! [mouse-up mouse-down mouse-move])]
-                    (when-not (nil? data2)
-                      (let [[ev x2 y2] data2]
-                        (cond
-                          (= c2 mouse-move)
-                          (let [inner (.-innerWidth js/window)
-                                height (.-innerHeight js/window)]
-                            (log "partition drag" x2 y2)
-
-                            (update-atoms! (- x2 10))
-
-                            ;; this is the wrong place... just to
-                            ;; test if the appearing space was scrolling
-                            (.scrollTo js/window 0 0)
-
-                            (recur))
-
-                          (= c2 mouse-down)
-                          (recur)
-
-                          (= c2 mouse-up)
-                          nil)))))
-                (recur))
-
-              :default
-              (recur))))))))
-
-
-(defn partitioner-control [el data-atom]
-  (log "pc")
-  (let [mouse-down (chan 1)
-        mouse-up (chan 1)
-        mouse-move (chan 1)]
-    (.addEventListener el "mousedown"
-                       #(do
-                          (put! mouse-down [% (.-clientX %) (.-clientY %)])
-                          (.preventDefault %)))
-    (.addEventListener js/window "mouseup"
-                       #(do
-                          (put! mouse-up [% (.-clientX %) (.-clientY %)])
-                          (.preventDefault %)))
-    (.addEventListener js/window "mousemove"
-                       #(do
-                          (put! mouse-move [% (.-clientX %) (.-clientY %)])))
-
-    (partitioner-thread el mouse-down mouse-up mouse-move)))
-
-(defn partitioner-did-mount [data-atom]
-  (fn [this]
-    (partitioner-control (reagent/dom-node this) data-atom)))
-
-(defn partitioner [data-atom]
-  [(with-meta
-     (fn [] [:div {:style {:position "absolute"
-                           :display "block"
-                                        ;:height "739px"
-                           :width "12px"
-                           :visibility "visible"
-                           :overflow "visible"
-                           :border "1px solid black"
-                           :background-color "#aaa"
-
-                           :margin "0px"
-                           :left (str (:split-x @data-atom) "px")
-                           :right "0px"
-                           :top "0px"
-                           :bottom "0px"
-                           }}])
-     {:component-did-mount (partitioner-did-mount data-atom)} )])
-
 (defn simple-component []
   (let [y (.-innerHeight js/window)]
     [:div
      [:div#main-canvas {:style {:position "absolute"}}
       [canvas/image-canvas canvas-state]]
-     [partitioner screen-state]
+     [partition/partitioner screen-state]
      [:div#code-editor
       (code/editor editor-state)]]))
 
