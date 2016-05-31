@@ -20,15 +20,12 @@
 
             [cljs.core.async :refer [<! chan put! alts!]]
 
-            [atelier.graphics :as graphics]
-
-)
+            [atelier.graphics :as graphics])
 
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]]
    [cljs.core.async.macros :refer [go]]
-   [infinitelives.pixi.macros :as m]
-   )
+   [infinitelives.pixi.macros :as m])
   )
 
 ;; pass key handler defaults through so codemirror
@@ -36,22 +33,6 @@
 (events/allow-key-defaults)
 
 (enable-console-print!)
-
-(defn canvas-did-mount [data-atom]
-  (fn [this]
-    (c/init
-     {:layers [:bg :fg]
-      :background 0xa0a0a0
-      :canvas (reagent/dom-node this)})))
-
-(defn canvas [data-atom]
-  [(with-meta
-     (fn [] [:canvas {:style {:width "100px" :height "100px"}}])
-     {:component-did-mount (canvas-did-mount data-atom)})])
-
-(defcard card-component-canvas
-  "A basic pixi canvas"
-  (reagent/as-element [canvas (atom nil)]))
 
 (defn- half-canvas
   "return a vecs from the top left corner of the canvas to the middle
