@@ -5,12 +5,10 @@
 
             [infinitelives.utils.console :refer [log]]
             [infinitelives.utils.events :as events]
-            [cljs.core.async :refer [<! chan put! alts! timeout]]
-            )
+            [cljs.core.async :refer [<! chan put! alts! timeout]])
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]]
-   [cljs.core.async.macros :refer [go]])
-  )
+   [cljs.core.async.macros :refer [go]]))
 
 (defn control-thread [el mouse-down mouse-up mouse-move update-fn]
   (go
@@ -57,24 +55,24 @@
     (control-thread el mouse-down mouse-up mouse-move update-fn)))
 
 (defn partitioner-did-mount [update-fn]
-  (fn [this]
-    (partitioner-control (reagent/dom-node this) update-fn)))
+  (fn [this] (partitioner-control (reagent/dom-node this) update-fn)))
 
 (defn partitioner [data-atom update-fn]
   [(with-meta
-     (fn [] [:div {:style {:position "absolute"
-                           :display "block"
-                                        ;:height "739px"
-                           :width "12px"
-                           :visibility "visible"
-                           :overflow "visible"
-                           :border "1px solid black"
-                           :background-color "#aaa"
+     (fn []
+       [:div
+        {:style
+         {:position "absolute"
+          :display "block"
+          :visibility "visible"
+          :overflow "visible"
 
-                           :margin "0px"
-                           :left (str (:split-x @data-atom) "px")
-                           :right "0px"
-                           :top "0px"
-                           :bottom "0px"
-                           }}])
+          :border "1px solid black"
+          :background-color "#aaa"
+          :margin "0px"
+          :width "12px"
+
+          :left (str (:split-x @data-atom) "px")
+          :top "0px"
+          :bottom "0px"}}])
      {:component-did-mount (partitioner-did-mount update-fn)} )])
