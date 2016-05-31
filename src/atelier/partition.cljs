@@ -42,27 +42,23 @@
               :default
               (recur))))))))
 
-(defn partitioner-control [el data-atom update-fn]
+(defn- make-channel-processing-fn [ch & {:keys [default] :or {default true}}]
+  (fn [ev]
+    (put! ch [ev (.-clientX ev) (.-clientY ev)])
+    (when-not default (.preventDefault ev))))
+
+(defn partitioner-control [el update-fn]
   (let [mouse-down (chan 1)
         mouse-up (chan 1)
         mouse-move (chan 1)]
-    (.addEventListener el "mousedown"
-                       #(do
-                          (put! mouse-down [% (.-clientX %) (.-clientY %)])
-                          (.preventDefault %)))
-    (.addEventListener js/window "mouseup"
-                       #(do
-                          (put! mouse-up [% (.-clientX %) (.-clientY %)])
-                          (.preventDefault %)))
-    (.addEventListener js/window "mousemove"
-                       #(do
-                          (put! mouse-move [% (.-clientX %) (.-clientY %)])))
-
+    (.addEventListener el "mousedown" (make-channel-processing-fn mouse-down :default false))
+    (.addEventListener js/window "mouseup" (make-channel-processing-fn mouse-up :default false))
+    (.addEventListener js/window "mousemove" (make-channel-processing-fn mouse-move))
     (control-thread el mouse-down mouse-up mouse-move update-fn)))
 
-(defn partitioner-did-mount [data-atom update-fn]
+(defn partitioner-did-mount [update-fn]
   (fn [this]
-    (partitioner-control (reagent/dom-node this) data-atom update-fn)))
+    (partitioner-control (reagent/dom-node this) update-fn)))
 
 (defn partitioner [data-atom update-fn]
   [(with-meta
@@ -81,4 +77,4 @@
                            :top "0px"
                            :bottom "0px"
                            }}])
-     {:component-did-mount (partitioner-did-mount data-atom update-fn)} )])
+     {:component-did-mount (partitioner-did-mount update-fn)} )])
