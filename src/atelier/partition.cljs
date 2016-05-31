@@ -27,10 +27,11 @@
         mouse-up (recur)
         mouse-move (recur)))))
 
-(defn- make-channel-processing-fn [ch & args]
-  (fn [ev]
-    (put! ch [ev (.-clientX ev) (.-clientY ev)])
-    (when (:prevent-default (set args)) (.preventDefault ev))))
+(defn- make-channel-processing-fn [ch & arg-list]
+  (let [flags (set arg-list)]
+    (fn [ev]
+      (put! ch [ev (.-clientX ev) (.-clientY ev)])
+      (when (:prevent-default flags) (.preventDefault ev)))))
 
 (defn partitioner-control [el update-fn]
   (let [mouse-down (chan 1)
