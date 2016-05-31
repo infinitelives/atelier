@@ -28,14 +28,8 @@
                       (let [[ev x2 y2] data2]
                         (cond
                           (= c2 mouse-move)
-                          (let [inner (.-innerWidth js/window)
-                                height (.-innerHeight js/window)]
+                          (do
                             (update-fn (- x2 10))
-
-                            ;; this is the wrong place... just to
-                            ;; test if the appearing space was scrolling
-                            (.scrollTo js/window 0 0)
-
                             (recur))
 
                           (= c2 mouse-down)
