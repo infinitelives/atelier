@@ -239,6 +239,14 @@
               :default
               (recur x y))))))))
 
+(defn- make-channel-processing-fn [ch & arg-list]
+  (let [flags (set arg-list)]
+    (fn [ev]
+      (put! ch
+            (if (:wheel-delta flags)
+              [ev (.-wheelDelta ev)]
+              [ev (.-clientX ev) (.-clientY ev)]))
+      (when (:prevent-default flags) (.preventDefault ev)))))
 
 (defn canvas-control [el data-atom texture-width texture-height]
   (let [mouse-down (chan 1)
@@ -248,28 +256,13 @@
         mouse-out (chan 1)
         mouse-over (chan 1)]
     (.addEventListener el "mousedown"
-                       #(do
-                          (put! mouse-down [% (.-clientX %) (.-clientY %)])
-                          (.preventDefault %)))
+                       (make-channel-processing-fn mouse-down :prevent-default))
     (.addEventListener js/window "mouseup"
-                       #(do
-                          (put! mouse-up [% (.-clientX %) (.-clientY %)])
-                          (.preventDefault %)))
+                       (make-channel-processing-fn mouse-up :prevent-default))
     (.addEventListener js/window "mousemove"
-                       #(do
-                          (put! mouse-move [% (.-clientX %) (.-clientY %)])))
+                       (make-channel-processing-fn mouse-move))
     (.addEventListener el "mousewheel"
-                       #(do
-                            (put! mouse-wheel [% (.-wheelDelta %)])
-                            (.preventDefault %)))
-    #_ (.addEventListener el "mouseout"
-                       #(do
-                            (put! mouse-out [% (.-clientX %) (.-clientY %)])
-                            (.preventDefault %)))
-    #_ (.addEventListener el "mouseover"
-                       #(do
-                            (put! mouse-over [% (.-clientX %) (.-clientY %)])
-                            (.preventDefault %)))
+                       (make-channel-processing-fn mouse-wheel :wheel-delta :prevent-default))
 
     (control-thread el texture-width texture-height
                     mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
