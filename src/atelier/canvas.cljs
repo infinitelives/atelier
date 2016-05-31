@@ -252,6 +252,62 @@
                     (fn [] (:scale @data-atom)))))
 
 
+(defn make-atom-watch-fn [canv rabbit image-foreground image-background
+                          bunny-width bunny-height empty-colour border-colour
+                          texture-width texture-height]
+  (fn [key atom old-state
+       {:keys [scale highlights offset width height]}]
+    (s/set-scale! rabbit scale)
+
+                                        ;(log "W:" width "H:" height)
+
+    (when width
+      (log "setting width:" width)
+      (set! (.-style.width (:canvas canv)) (str width))
+      ((:resize-fn canv)
+       width (.-innerHeight js/window)
+       )
+      )
+
+    (let [[x y] offset
+          position [(- x) (- y)]]
+      (apply s/set-pivot! (m/get-layer canv :bg) position)
+      (apply s/set-pivot! (m/get-layer canv :image) position)
+      (apply s/set-pivot! (m/get-layer canv :fg) position))
+
+    (.clear image-foreground)
+
+    (when-not (= (:scale old-state) scale)
+      (.clear image-background)
+
+      (graphics/draw-chessboard
+       image-background
+       :start-x (* scale -0.5 bunny-width)
+       :start-y (* scale -0.5 bunny-height)
+       :width (* scale bunny-width)
+       :height (* scale bunny-height)
+       :colour-1 0x8080ff
+       :colour-2 0xa0a0ff
+       :tile-width 24
+       :tile-height 24)
+
+      (doto image-background
+        (.beginFill empty-colour 0.0)
+        (.lineStyle 1 border-colour)
+        (.drawRect (dec (* scale -0.5 bunny-width))
+                   (dec (* scale -0.5 bunny-height))
+                   (inc (* scale bunny-width))
+                   (inc (* scale bunny-height)))))
+
+    (loop [[{:keys [pos size]} & t] highlights]
+                                        ;(.log js/console "pos" pos "size" size)
+      (graphics/draw-foreground-rectangle
+       image-foreground scale
+       pos size [texture-width texture-height])
+      (when (seq t)
+        (recur t))))
+  )
+
 (defn image-canvas-did-mount [data-atom & {:keys [url]
                                            :or {url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"}}]
   (fn [this]
@@ -329,57 +385,9 @@
               ;; add watcher? These will bunch
               ;; up on load unless we remove them
               (add-watch data-atom :dummy
-                         (fn [key atom old-state
-                              {:keys [scale highlights offset width height]}]
-                           (s/set-scale! rabbit scale)
-
-                           ;(log "W:" width "H:" height)
-
-                           (when width
-                             (log "setting width:" width)
-                             (set! (.-style.width (:canvas canv)) (str width))
-                             ((:resize-fn canv)
-                              width (.-innerHeight js/window)
-                              )
-                             )
-
-                           (let [[x y] offset
-                                 position [(- x) (- y)]]
-                             (apply s/set-pivot! (m/get-layer canv :bg) position)
-                             (apply s/set-pivot! (m/get-layer canv :image) position)
-                             (apply s/set-pivot! (m/get-layer canv :fg) position))
-
-                           (.clear image-foreground)
-
-                           (when-not (= (:scale old-state) scale)
-                             (.clear image-background)
-
-                             (graphics/draw-chessboard
-                              image-background
-                              :start-x (* scale -0.5 bunny-width)
-                              :start-y (* scale -0.5 bunny-height)
-                              :width (* scale bunny-width)
-                              :height (* scale bunny-height)
-                              :colour-1 0x8080ff
-                              :colour-2 0xa0a0ff
-                              :tile-width 24
-                              :tile-height 24)
-
-                             (doto image-background
-                             (.beginFill empty-colour 0.0)
-                             (.lineStyle 1 border-colour)
-                             (.drawRect (dec (* scale -0.5 bunny-width))
-                                        (dec (* scale -0.5 bunny-height))
-                                        (inc (* scale bunny-width))
-                                        (inc (* scale bunny-height)))))
-
-                           (loop [[{:keys [pos size]} & t] highlights]
-                             ;(.log js/console "pos" pos "size" size)
-                             (graphics/draw-foreground-rectangle
-                              image-foreground scale
-                              pos size [texture-width texture-height])
-                             (when (seq t)
-                               (recur t)))))
+                         (make-atom-watch-fn canv rabbit image-foreground image-background
+                          bunny-width bunny-height empty-colour border-colour
+                          texture-width texture-height))
 
               (loop [f 0]
                 (<! (e/next-frame))
