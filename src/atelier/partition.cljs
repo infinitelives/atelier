@@ -8,37 +8,24 @@
             [cljs.core.async :refer [<! chan put! alts! timeout]])
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]]
-   [cljs.core.async.macros :refer [go]]))
+   [cljs.core.async.macros :refer [go alt!]]))
+
 
 (defn control-thread [el mouse-down mouse-up mouse-move update-fn]
   (go
     (loop []
-      (let [[data c] (alts! [mouse-up mouse-down mouse-move])]
-        (when-not (nil? data)
-          (let [[ev ox oy] data]
-            (cond
-              (= c mouse-down)
-              ;; mouse down. drag
-              (do
-                (loop []
-                  (let [[data2 c2] (alts! [mouse-up mouse-down mouse-move])]
-                    (when-not (nil? data2)
-                      (let [[ev x2 y2] data2]
-                        (cond
-                          (= c2 mouse-move)
-                          (do
-                            (update-fn (- x2 10))
-                            (recur))
-
-                          (= c2 mouse-down)
-                          (recur)
-
-                          (= c2 mouse-up)
-                          nil)))))
-                (recur))
-
-              :default
-              (recur))))))))
+      (alt!
+        mouse-down (do
+                     (loop []
+                       (alt!
+                         mouse-move ([[ev x2 y2]]
+                                     (update-fn (- x2 10))
+                                     (recur))
+                         mouse-down (recur)
+                         mouse-up nil))
+                     (recur))
+        mouse-up (recur)
+        mouse-move (recur)))))
 
 (defn- make-channel-processing-fn [ch & {:keys [default] :or {default true}}]
   (fn [ev]
@@ -49,9 +36,12 @@
   (let [mouse-down (chan 1)
         mouse-up (chan 1)
         mouse-move (chan 1)]
-    (.addEventListener el "mousedown" (make-channel-processing-fn mouse-down :default false))
-    (.addEventListener js/window "mouseup" (make-channel-processing-fn mouse-up :default false))
-    (.addEventListener js/window "mousemove" (make-channel-processing-fn mouse-move))
+    (.addEventListener el "mousedown"
+      (make-channel-processing-fn mouse-down :default false))
+    (.addEventListener js/window "mouseup"
+      (make-channel-processing-fn mouse-up :default false))
+    (.addEventListener js/window "mousemove"
+      (make-channel-processing-fn mouse-move))
     (control-thread el mouse-down mouse-up mouse-move update-fn)))
 
 (defn partitioner-did-mount [update-fn]
