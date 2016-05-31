@@ -1,10 +1,5 @@
 (ns atelier.canvas
   (:require [reagent.core :as reagent]
-            [cljs.tools.reader :refer [read-string]]
-            [cljsjs.codemirror]
-            [cljsjs.codemirror.mode.clojure]
-            [cljsjs.codemirror.keymap.emacs]
-
             [infinitelives.pixi.canvas :as c]
             [infinitelives.pixi.events :as e]
             [infinitelives.pixi.resources :as r]
