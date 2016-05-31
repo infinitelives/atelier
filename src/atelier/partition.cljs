@@ -27,19 +27,19 @@
         mouse-up (recur)
         mouse-move (recur)))))
 
-(defn- make-channel-processing-fn [ch & {:keys [default] :or {default true}}]
+(defn- make-channel-processing-fn [ch & args]
   (fn [ev]
     (put! ch [ev (.-clientX ev) (.-clientY ev)])
-    (when-not default (.preventDefault ev))))
+    (when (:prevent-default (set args)) (.preventDefault ev))))
 
 (defn partitioner-control [el update-fn]
   (let [mouse-down (chan 1)
         mouse-up (chan 1)
         mouse-move (chan 1)]
     (.addEventListener el "mousedown"
-      (make-channel-processing-fn mouse-down :default false))
+      (make-channel-processing-fn mouse-down :prevent-default))
     (.addEventListener js/window "mouseup"
-      (make-channel-processing-fn mouse-up :default false))
+      (make-channel-processing-fn mouse-up :prevent-default))
     (.addEventListener js/window "mousemove"
       (make-channel-processing-fn mouse-move))
     (control-thread el mouse-down mouse-up mouse-move update-fn)))
