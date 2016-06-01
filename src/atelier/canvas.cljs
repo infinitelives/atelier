@@ -114,6 +114,47 @@
                        (recur x y)))
         mouse-up nil))))
 
+(defn zoom-canvas [canvas x y
+                   getpos-fn getscale-fn setpos-fn zoom-fn zoom-canvas
+                   texture-width texture-height ox
+                   ]
+  (let [bounds (.getBoundingClientRect canvas)
+        top (.-top bounds)
+        left (.-left bounds)
+
+        md-x (- x left)
+        md-y (- y top)
+
+        [start-x start-y] (getpos-fn)
+        scale (getscale-fn)
+
+        co-ord (vec2/vec2 md-x md-y)
+
+        ;; this pixel has to stay at the cursor position after zoom
+        local-offset (canvas->local canvas [x y]
+                                    (getpos-fn)
+                                    [texture-width texture-height]
+                                    (getscale-fn))
+
+        ;; calculate the new canvas offset to keep this pixel there on the canvas
+        new-scale (+ (Math/sign ox) scale)
+        new-offset (local->canvas canvas local-offset co-ord
+                                  [start-x start-y]
+                                  [texture-width texture-height]
+                                  new-scale)]
+    ;; this pixel has to stay at the cursor position after zoom
+    (if (>= new-scale 1)
+      (do
+
+        (setpos-fn
+         (vec2/get-x new-offset)
+         (vec2/get-y new-offset))
+
+        (zoom-fn (Math/sign ox))
+        )
+      ))
+  )
+
 (defn control-thread [canvas texture-width texture-height
                       mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
                       getpos-fn setpos-fn zoom-fn sethighlight-fn getscale-fn]
@@ -166,41 +207,11 @@
 
               (= c mouse-wheel)
               ;; mouse wheel movement
-              (let [bounds (.getBoundingClientRect canvas)
-                    top (.-top bounds)
-                    left (.-left bounds)
-
-                    md-x (- x left)
-                    md-y (- y top)
-
-                    [start-x start-y] (getpos-fn)
-                    scale (getscale-fn)
-
-                    co-ord (vec2/vec2 md-x md-y)
-
-                    ;; this pixel has to stay at the cursor position after zoom
-                    local-offset (canvas->local canvas [x y]
-                                                (getpos-fn)
-                                                [texture-width texture-height]
-                                                (getscale-fn))
-
-                    ;; calculate the new canvas offset to keep this pixel there on the canvas
-                    new-scale (+ (Math/sign ox) scale)
-                    new-offset (local->canvas canvas local-offset co-ord
-                                              [start-x start-y]
-                                              [texture-width texture-height]
-                                              new-scale)]
-                ;; this pixel has to stay at the cursor position after zoom
-                (if (>= new-scale 1)
-                  (do
-
-                    (setpos-fn
-                     (vec2/get-x new-offset)
-                     (vec2/get-y new-offset))
-
-                    (zoom-fn (Math/sign ox))
-                    (recur x y))
-                  (recur x y)))
+              (do (zoom-canvas canvas
+                               x y
+                               getpos-fn getscale-fn setpos-fn zoom-fn zoom-canvas
+                               texture-width texture-height ox)
+                  (recur x y))
 
               (= c mouse-move)
               (recur ox oy)
