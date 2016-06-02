@@ -81,32 +81,25 @@
     new-offset))
 
 
-(defn selection-drag [canvas->local-fn local-offset sethighlight-fn
+(defn selection-drag [canvas->local-fn sethighlight-fn
                       mouse-up mouse-move mouse-wheel]
   (go
     (loop [x 0 y 0]
       (alt!
         mouse-move ([[ev x2 y2]]
                     (let [e (canvas->local-fn [x2 y2])]
-                      (sethighlight-fn
-                       (int (vec2/get-x local-offset))
-                       (int (vec2/get-y local-offset))
-                       (int (vec2/get-x e))
-                       (int (vec2/get-y e)))
+                      (sethighlight-fn e)
                       (recur x2 y2)))
         mouse-wheel (recur x y)
         mouse-up nil))))
 
 (defn drag-canvas [canvas->local-fn setpos-fn zoom-fn
-                   ox oy start-x start-y
                    mouse-up mouse-move mouse-wheel]
   (go
     (loop [x 0 y 0]
       (alt!
         mouse-move ([[ev x2 y2]]
-                    (setpos-fn
-                     (+ start-x (- x2 ox))
-                     (+ start-y (- y2 oy)))
+                    (setpos-fn x2 y2)
                     (recur x2 y2))
         mouse-wheel ([[ev x2 y2]]
                      (let [local-offset (canvas->local-fn [x y])]
@@ -114,10 +107,10 @@
                        (recur x y)))
         mouse-up nil))))
 
+
 (defn zoom-canvas [canvas x y
                    getpos-fn getscale-fn setpos-fn zoom-fn zoom-canvas
-                   texture-width texture-height ox
-                   ]
+                   texture-width texture-height ox]
   (let [bounds (.getBoundingClientRect canvas)
         top (.-top bounds)
         left (.-left bounds)
@@ -150,10 +143,7 @@
          (vec2/get-x new-offset)
          (vec2/get-y new-offset))
 
-        (zoom-fn (Math/sign ox))
-        )
-      ))
-  )
+        (zoom-fn (Math/sign ox))))))
 
 (defn control-thread [canvas texture-width texture-height
                       mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
@@ -179,8 +169,10 @@
                        canvas % (getpos-fn)
                        [texture-width texture-height]
                        (getscale-fn))
-                     setpos-fn zoom-fn
-                     ox oy start-x start-y
+                     #(setpos-fn
+                      (+ start-x (- %1 ox))
+                      (+ start-y (- %2 oy)))
+                     zoom-fn
                      mouse-up mouse-move mouse-wheel))
                 (recur x y))
 
@@ -200,7 +192,11 @@
                        canvas % (getpos-fn)
                        [texture-width texture-height]
                        (getscale-fn))
-                     local-offset sethighlight-fn
+                     #(sethighlight-fn
+                       (int (vec2/get-x local-offset))
+                       (int (vec2/get-y local-offset))
+                       (int (vec2/get-x %))
+                       (int (vec2/get-y %)))
                      mouse-up mouse-move mouse-wheel))
                 (recur x y))
 
