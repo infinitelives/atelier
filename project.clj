@@ -12,7 +12,7 @@
                   :exclusions [org.clojure/tools.reader]]
 
                  [devcards "0.2.1-6"]
-                 [reagent "0.5.1"]
+                 [reagent "0.6.0-alpha2"]
                  [cljsjs/highlight "8.4-0"]
                  [cljsjs/codemirror "5.11.0-1"]
 
