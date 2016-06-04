@@ -1,7 +1,10 @@
 (ns atelier.core
   (:require [reagent.core :as reagent]
+            [clojure.string :as string]
+
             [atelier.canvas :as canvas]
             [atelier.code :as code]
+            [atelier.testing :as testing]
             [atelier.partition :as partition]
 
             [infinitelives.utils.console :refer [log]]
@@ -10,58 +13,93 @@
             )
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]]
-   [cljs.core.async.macros :refer [go]])
+   [cljs.core.async.macros :refer [go]]
+   [reagent.ratom :refer [reaction]]
+   )
   )
 
 (enable-console-print!)
 
-
-(defn on-click [ratom]
-  (swap! ratom update-in [:count] inc))
-
-(defonce editor-state (reagent/atom {:value "{
+(defonce state
+  (reagent/atom
+   {
+    :editor {
+             :value "{
   :foo {:size [8 8] :pos [8 8]}
   :bar {
     :size [16 16]
     :pos [24 24]
   }
 }"
-                                     :cursor {:line 1 :ch 0}}))
+             :cursor {
+                      :line 1
+                      :ch 0
+                      }
 
-(defonce canvas-state (reagent/atom {
-   :highlights
-   [
-    {:pos [9 12]
-     :size [1 10]}
-    ]
+             :left 0
+             :width 200
+             :height 100
+             }
 
-   :scale 3
+    :canvas {
+             :highlights [
+                          {:pos [9 12]
+                           :size [1 10]}
+                          ]
 
-   :offset [0 0]
-   :width 200
-   :height 400
-   }))
+             :scale 3
 
-(defonce screen-state
-  (reagent/atom
-   {
-    :split-x 200
-    }))
+             :offset [0 0]
+             :width 200
+             :height 400
+             }
+
+    :partition {:x 200}}))
 
 (defn update-atoms! [x]
   (let [height (.-innerHeight js/window)]
-    (swap! screen-state assoc :split-x x)
-    (swap! editor-state assoc :width x :height height)
-    (swap! canvas-state assoc :width x)))
+    (swap! state
+           #(-> %
+                (assoc-in [:partition :x] x)
+                (assoc-in [:editor :width] x)
+                (assoc-in [:editor :height] height)
+                (assoc-in [:canvas :width] x)
+                (assoc-in [:canvas :height] height)))))
+
+;; propagate watch events into the cursors
+;; https://github.com/reagent-project/reagent/issues/244
+(defn cursor [src path]
+  (let [watch-key (->> path
+                       (map name)
+                       (string/join "-")
+                       (str "propagate-")
+                       keyword)
+        curs (reagent/cursor src path)]
+    (add-watch src watch-key
+               (fn [k a o n]
+                 (when
+                     (not=
+                      (get-in o path)
+                      (get-in n path))
+                   (reset! curs (get-in n path)))))
+    curs))
 
 (defn simple-component []
-  (let [y (.-innerHeight js/window)]
+  (let [y (.-innerHeight js/window)
+        canvas-cursor (cursor state [:canvas])
+        editor-cursor (cursor state [:editor])
+        partition-cursor (cursor state [:partition])]
+
     [:div
      [:div#main-canvas {:style {:position "absolute"}}
-      [canvas/image-canvas canvas-state]]
-     [partition/partitioner screen-state update-atoms!]
+      [canvas/image-canvas
+       canvas-cursor]]
+     [partition/partitioner
+      partition-cursor
+      update-atoms!]
      [:div#code-editor
-      (code/editor editor-state)]]))
+      (code/editor
+       editor-cursor)]]))
 
 (defn render-simple []
   (reagent/render-component
@@ -70,14 +108,16 @@
 
 (render-simple)
 
+
 (update-atoms! (int (* (.-innerWidth js/window) 0.75)))
 
 (defonce resize-thread
   (go (let [c (events/new-resize-chan)]
         (while true
           (<! c)
-          (update-atoms! (:split-x @screen-state))))))
+          (update-atoms! 500)))))
 
 ;; hacky bugfix
+
 (go (<! (timeout 2000))
     (update-atoms! (int (* (.-innerWidth js/window) 0.7))))

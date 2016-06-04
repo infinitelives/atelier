@@ -46,7 +46,8 @@
     (control-thread el mouse-down mouse-up mouse-move update-fn)))
 
 (defn partitioner-did-mount [update-fn]
-  (fn [this] (partitioner-control (reagent/dom-node this) update-fn)))
+  (fn [this]
+    (partitioner-control (reagent/dom-node this) update-fn)))
 
 (defn partitioner [data-atom update-fn]
   [(with-meta
@@ -63,7 +64,7 @@
           :margin "0px"
           :width "12px"
 
-          :left (str (:split-x @data-atom) "px")
+          :left (str (:x @data-atom) "px")
           :top "0px"
           :bottom "0px"}}])
      {:component-did-mount (partitioner-did-mount update-fn)} )])
