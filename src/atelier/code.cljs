@@ -12,20 +12,6 @@
 
 (enable-console-print!)
 
-(println "Edits to this text should show up in your developer console.")
-
-;; define your app data so that it doesn't get over-written on reload
-
-(defonce app-state (atom {:text "Hello world!"}))
-
-
-(defn on-js-reload []
-  ;; optionally touch your app-state to force rerendering depending on
-  ;; your application
-  ;; (swap! app-state update-in [:__figwheel_counter] inc)
-)
-
-
 
 (defcard-doc
   "
@@ -82,21 +68,17 @@ Note: This widget is for representing clojure literals as source code
                    :theme "zenburn"
                    :keyMap "emacs"})]
       (.setSize cm width "100%")
-      (add-watch data-atom nil
+      (add-watch data-atom :code-editor
                  (fn [key atom old-state new-state]
                    (.log js/console "fn" key atom (str old-state) (str new-state))
                    (when (not= old-state new-state)
-
                      (when (and (:width new-state) (:height new-state))
                        (.log js/console "set size")
                        (.setSize cm
                                  (- (.-innerWidth js/window) (:width new-state) 18)
                                  (- (:height new-state) 2))
                        (set! (.-display.wrapper.style.left cm)
-                             (str (+ 2 12 (:width new-state)) "px"))
-                       )
-
-                                        ;(+ 2 12 (:split-x @screen-state))
+                             (str (+ 2 12 (:width new-state)) "px")))
 
                      (when (not= (:value new-state) (:value old-state))
                        (.log js/console "setValue")
@@ -106,6 +88,7 @@ Note: This widget is for representing clojure literals as source code
                      (when (not= (:cursor new-state) (:cursor old-state))
                        (.log js/console "setCursor")
                        (.setCursor cm (clj->js (:cursor new-state)))))))
+
       (.on cm "change"
            (fn [from to text removed origin]
              (.log js/console "onChange")
@@ -126,26 +109,27 @@ Note: This widget is for representing clojure literals as source code
                (.log js/console "skipped"))
              ))
 
-      ;; this gets triggered on add-watch .setValue
-      ;; and this screws up devcards 'redo'
-      ;; TODO: filter out the unneeded events like in on change above
-      #_ (.on cm "cursorActivity"
-              #(do
-                 (.log js/console "cursorActivity")
-                 (swap! data-atom assoc
-                        :cursor (let [curs (.getCursor cm "head")]
-                                  (.log js/console "curs" curs)
-                                  {:line (.-line curs)
-                                   :ch (.-ch curs)})
-                        )
-                 ))
+      (comment
+        ;; this gets triggered on add-watch .setValue
+        ;; and this screws up devcards 'redo'
+        ;; TODO: filter out the unneeded events like in on change above
+        (.on cm "cursorActivity"
+             #(do
+                (.log js/console "cursorActivity")
+                (swap! data-atom assoc
+                       :cursor (let [curs (.getCursor cm "head")]
+                                 (.log js/console "curs" curs)
+                                 {:line (.-line curs)
+                                  :ch (.-ch curs)})
+                       )
+                )))
       )))
 
 
 
 (defn editor [data-atom & {:keys [width height]
-                           :or {width 640
-                                height 480}}]
+                           :or {width 300
+                                height 280}}]
   [(with-meta
      (fn [] [:div {:style {:width (str width "px")
                            :height (str height "px")
@@ -167,10 +151,8 @@ Note: This widget is for representing clojure literals as source code
   "as you change the code, the reader is invoked and the data structure dumped. Undo and redo should work."
   (fn [data-atom owner]
     (reagent/as-element [editor data-atom]))
-                                        ;(reagent/as-element [editor (atom nil)])
   {:value "{}\n"
    :cursor {:line 1 :ch 0}}
   {:inspect-data true
    :history true}
-  ;(reagent/as-element [editor (atom nil)])
 )
