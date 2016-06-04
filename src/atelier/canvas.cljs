@@ -294,7 +294,7 @@
     (.clear image-foreground)
 
     (when-not (= (:scale old-state) scale)
-      (draw-image-background image-foreground scale
+      (draw-image-background image-background scale
                              empty-colour border-colour
                              bunny-width bunny-height))
 
