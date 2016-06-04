@@ -70,10 +70,8 @@ Note: This widget is for representing clojure literals as source code
       (.setSize cm width "100%")
       (add-watch data-atom :code-editor
                  (fn [key atom old-state new-state]
-                   (.log js/console "fn" key atom (str old-state) (str new-state))
                    (when (not= old-state new-state)
                      (when (and (:width new-state) (:height new-state))
-                       (.log js/console "set size")
                        (.setSize cm
                                  (- (.-innerWidth js/window) (:width new-state) 18)
                                  (- (:height new-state) 2))
@@ -81,33 +79,27 @@ Note: This widget is for representing clojure literals as source code
                              (str (+ 2 12 (:width new-state)) "px")))
 
                      (when (not= (:value new-state) (:value old-state))
-                       (.log js/console "setValue")
                        ;; this setValue needs to NOT trigger an onchange
+                       ;; so we exclude this change with the swap! in
+                       ;; on "change"
                        (.setValue cm (:value new-state)))
 
                      (when (not= (:cursor new-state) (:cursor old-state))
-                       (.log js/console "setCursor")
                        (.setCursor cm (clj->js (:cursor new-state)))))))
 
       (.on cm "change"
            (fn [from to text removed origin]
-             (.log js/console "onChange")
-             (.log js/console "change:" (.getValue from) )
-             (.log js/console "C:" from to text removed origin)
-             (if (not= (.-origin to) "setValue")
+             (when (not= (.-origin to) "setValue")
+               ;; a change from the user, not from the data atom
                (do
                  (swap! data-atom assoc
                         :value (.getValue from)
                         :cursor (let [curs (.getCursor cm "head")]
-                                  (.log js/console "curs" curs)
                                   {:line (.-line curs)
                                    :ch (.-ch curs)}))
                  (let [parsed (read-string (.getValue from))]
                    ;; successful parse. TODO: catch error
-                   (swap! data-atom assoc :parsed parsed)))
-               (.log js/console "skipped")))))))
-
-
+                   (swap! data-atom assoc :parsed parsed)))))))))
 
 (defn editor [data-atom & {:keys [width height]
                            :or {width 300
