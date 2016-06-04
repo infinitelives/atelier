@@ -138,24 +138,20 @@
     ;; this pixel has to stay at the cursor position after zoom
     (if (>= new-scale 1)
       (do
-
         (setpos-fn
          (vec2/get-x new-offset)
          (vec2/get-y new-offset))
-
         (zoom-fn (Math/sign ox))))))
 
 (defn control-thread [canvas texture-width texture-height
-                      mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
+                      mouse-down mouse-up mouse-move mouse-wheel
                       getpos-fn setpos-fn zoom-fn sethighlight-fn getscale-fn]
   (go
     (loop [x 0 y 0]
       (let [[data c] (alts! [mouse-move
                              mouse-up
                              mouse-down
-                             mouse-wheel
-                             mouse-out
-                             mouse-over])]
+                             mouse-wheel])]
         (when-not (nil? data)
           (let [[ev ox oy] data]
             (cond
@@ -242,7 +238,7 @@
                        (make-channel-processing-fn mouse-wheel :wheel-delta :prevent-default))
 
     (control-thread el texture-width texture-height
-                    mouse-down mouse-up mouse-move mouse-wheel mouse-out mouse-over
+                    mouse-down mouse-up mouse-move mouse-wheel
                     (fn [] (:offset @data-atom))
                     (fn [x y] (swap! data-atom assoc :offset [x y]))
                     (fn [z] (swap! data-atom update :scale + z))
