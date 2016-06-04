@@ -249,6 +249,32 @@
                                            :size [(- x2 x) (- y2 y)]))
                     (fn [] (:scale @data-atom)))))
 
+(defn- draw-image-background [image-background scale
+                              empty-colour border-colour
+                              bunny-width bunny-height]
+  (.clear image-background)
+  (graphics/draw-chessboard
+   image-background
+   :start-x (* scale -0.5 bunny-width)
+   :start-y (* scale -0.5 bunny-height)
+   :width (* scale bunny-width)
+   :height (* scale bunny-height)
+   :colour-1 0x8080ff
+   :colour-2 0xa0a0ff
+   :tile-width 24
+   :tile-height 24)
+  (doto image-background
+    (.beginFill empty-colour 0.0)
+    (.lineStyle 1 border-colour)
+    (.drawRect (dec (* scale -0.5 bunny-width))
+               (dec (* scale -0.5 bunny-height))
+               (inc (* scale bunny-width))
+               (inc (* scale bunny-height)))))
+
+(defn set-canvas-pos! [canv pos]
+  (apply s/set-pivot! (m/get-layer canv :bg) pos)
+  (apply s/set-pivot! (m/get-layer canv :image) pos)
+  (apply s/set-pivot! (m/get-layer canv :fg) pos))
 
 (defn make-atom-watch-fn [canv rabbit image-foreground image-background
                           bunny-width bunny-height empty-colour border-colour
@@ -262,44 +288,22 @@
       ((:resize-fn canv)
        width (.-innerHeight js/window)))
 
-    (let [[x y] offset
-          position [(- x) (- y)]]
-      (apply s/set-pivot! (m/get-layer canv :bg) position)
-      (apply s/set-pivot! (m/get-layer canv :image) position)
-      (apply s/set-pivot! (m/get-layer canv :fg) position))
+    (let [[x y] offset]
+      (set-canvas-pos! canv [(- x) (- y)]))
 
     (.clear image-foreground)
 
     (when-not (= (:scale old-state) scale)
-      (.clear image-background)
-
-      (graphics/draw-chessboard
-       image-background
-       :start-x (* scale -0.5 bunny-width)
-       :start-y (* scale -0.5 bunny-height)
-       :width (* scale bunny-width)
-       :height (* scale bunny-height)
-       :colour-1 0x8080ff
-       :colour-2 0xa0a0ff
-       :tile-width 24
-       :tile-height 24)
-
-      (doto image-background
-        (.beginFill empty-colour 0.0)
-        (.lineStyle 1 border-colour)
-        (.drawRect (dec (* scale -0.5 bunny-width))
-                   (dec (* scale -0.5 bunny-height))
-                   (inc (* scale bunny-width))
-                   (inc (* scale bunny-height)))))
+      (draw-image-background image-foreground scale
+                             empty-colour border-colour
+                             bunny-width bunny-height))
 
     (loop [[{:keys [pos size]} & t] highlights]
-                                        ;(.log js/console "pos" pos "size" size)
       (graphics/draw-foreground-rectangle
        image-foreground scale
        pos size [texture-width texture-height])
       (when (seq t)
-        (recur t))))
-  )
+        (recur t)))))
 
 (defn image-canvas-did-mount [data-atom & {:keys [url]
                                            :or {url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"}}]
@@ -344,36 +348,18 @@
               (canvas-control (:canvas canv) data-atom
                               texture-width texture-height)
 
-              (doto image-background
-                (.beginFill empty-colour 0.0)
-                (.lineStyle 1 border-colour)
-                (.drawRect (dec (* scale -0.5 bunny-width))
-                           (dec (* scale -0.5 bunny-height))
-                           (inc (* scale bunny-width))
-                           (inc (* scale bunny-height))))
-
               (graphics/draw-foreground-rectangle
                image-foreground scale
                [9 10] [1 10] [texture-width texture-height])
 
-              (graphics/draw-chessboard
-               image-background
-               :start-x (* scale -0.5 bunny-width)
-               :start-y (* scale -0.5 bunny-height)
-               :width (* scale bunny-width)
-               :height (* scale bunny-height)
-               :colour-1 0x8080ff
-               :colour-2 0xa0a0ff
-               :tile-width 24
-               :tile-height 24)
+              (draw-image-background image-background scale
+                                     empty-colour border-colour
+                                     bunny-width bunny-height)
 
               (.addChild (m/get-layer canv :bg) image-background)
               (.addChild (m/get-layer canv :fg) image-foreground)
 
-              (let [position [0 0]]
-                (apply s/set-pivot! (m/get-layer canv :bg) position)
-                (apply s/set-pivot! (m/get-layer canv :image) position)
-                (apply s/set-pivot! (m/get-layer canv :fg) position))
+              (set-canvas-pos! canv [0 0])
 
               ;; add watcher? These will bunch
               ;; up on load unless we remove them
