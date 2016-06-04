@@ -12,7 +12,6 @@
 
 (enable-console-print!)
 
-
 (defcard-doc
   "
 ## Code Box
