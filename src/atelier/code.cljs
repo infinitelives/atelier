@@ -104,26 +104,8 @@ Note: This widget is for representing clojure literals as source code
                                    :ch (.-ch curs)}))
                  (let [parsed (read-string (.getValue from))]
                    ;; successful parse. TODO: catch error
-                   (swap! data-atom assoc :parsed parsed)
-                   ))
-               (.log js/console "skipped"))
-             ))
-
-      (comment
-        ;; this gets triggered on add-watch .setValue
-        ;; and this screws up devcards 'redo'
-        ;; TODO: filter out the unneeded events like in on change above
-        (.on cm "cursorActivity"
-             #(do
-                (.log js/console "cursorActivity")
-                (swap! data-atom assoc
-                       :cursor (let [curs (.getCursor cm "head")]
-                                 (.log js/console "curs" curs)
-                                 {:line (.-line curs)
-                                  :ch (.-ch curs)})
-                       )
-                )))
-      )))
+                   (swap! data-atom assoc :parsed parsed)))
+               (.log js/console "skipped")))))))
 
 
 
@@ -138,14 +120,11 @@ Note: This widget is for representing clojure literals as source code
       :component-will-mount #(log "code-component-will-mount")
       :component-will-update #(log "code-component-will-update")
       :component-did-update #(log "code-component-did-update")
-      :component-will-unmount #(log "code-component-will-unmount")
-
-})])
+      :component-will-unmount #(log "code-component-will-unmount")})])
 
 (defcard card-component-editable-display
   "reloadable, editable code entry"
   (reagent/as-element [editor (atom nil)]))
-
 
 (defcard card-component-changable-editor-with-reader
   "as you change the code, the reader is invoked and the data structure dumped. Undo and redo should work."
@@ -154,5 +133,4 @@ Note: This widget is for representing clojure literals as source code
   {:value "{}\n"
    :cursor {:line 1 :ch 0}}
   {:inspect-data true
-   :history true}
-)
+   :history true})
