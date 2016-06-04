@@ -256,16 +256,11 @@
   (fn [key atom old-state
        {:keys [scale highlights offset width height]}]
     (s/set-scale! rabbit scale)
-
-                                        ;(log "W:" width "H:" height)
-
     (when width
       (log "setting width:" width)
       (set! (.-style.width (:canvas canv)) (str width))
       ((:resize-fn canv)
-       width (.-innerHeight js/window)
-       )
-      )
+       width (.-innerHeight js/window)))
 
     (let [[x y] offset
           position [(- x) (- y)]]
@@ -394,14 +389,7 @@
 (defn image-canvas [data-atom]
   [(with-meta
      (fn [] [:canvas])
-     {:component-did-mount
-      (image-canvas-did-mount data-atom)
-      :component-will-mount #(log "component-will-mount")
-      :component-will-update #(log "component-will-update")
-      :component-did-update #(log "component-did-update")
-      :component-will-unmount #(log "component-will-unmount")
-
-})])
+     {:component-did-mount (image-canvas-did-mount data-atom)})])
 
 ;;
 ;; Devcards
