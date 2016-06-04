@@ -35,8 +35,6 @@
                       :line 1
                       :ch 0
                       }
-
-             :left 0
              :width 200
              :height 100
              }
@@ -46,9 +44,7 @@
                           {:pos [9 12]
                            :size [1 10]}
                           ]
-
              :scale 3
-
              :offset [0 0]
              :width 200
              :height 400
