@@ -116,11 +116,7 @@ Note: This widget is for representing clojure literals as source code
      (fn [] [:div {:style {:width (str width "px")
                            :height (str height "px")
                            }}])
-     {:component-did-mount (editor-did-mount data-atom :width width :height height)
-      :component-will-mount #(log "code-component-will-mount")
-      :component-will-update #(log "code-component-will-update")
-      :component-did-update #(log "code-component-did-update")
-      :component-will-unmount #(log "code-component-will-unmount")})])
+     {:component-did-mount (editor-did-mount data-atom :width width :height height)})])
 
 (defcard card-component-editable-display
   "reloadable, editable code entry"
