@@ -251,14 +251,14 @@
 
 (defn- draw-image-background [image-background scale
                               empty-colour border-colour
-                              bunny-width bunny-height]
+                              document-width document-height]
   (.clear image-background)
   (graphics/draw-chessboard
    image-background
-   :start-x (* scale -0.5 bunny-width)
-   :start-y (* scale -0.5 bunny-height)
-   :width (* scale bunny-width)
-   :height (* scale bunny-height)
+   :start-x (* scale -0.5 document-width)
+   :start-y (* scale -0.5 document-height)
+   :width (* scale document-width)
+   :height (* scale document-height)
    :colour-1 0x8080ff
    :colour-2 0xa0a0ff
    :tile-width 24
@@ -266,22 +266,22 @@
   (doto image-background
     (.beginFill empty-colour 0.0)
     (.lineStyle 1 border-colour)
-    (.drawRect (dec (* scale -0.5 bunny-width))
-               (dec (* scale -0.5 bunny-height))
-               (inc (* scale bunny-width))
-               (inc (* scale bunny-height)))))
+    (.drawRect (dec (* scale -0.5 document-width))
+               (dec (* scale -0.5 document-height))
+               (inc (* scale document-width))
+               (inc (* scale document-height)))))
 
 (defn set-canvas-pos! [canv pos]
   (apply s/set-pivot! (m/get-layer canv :bg) pos)
   (apply s/set-pivot! (m/get-layer canv :image) pos)
   (apply s/set-pivot! (m/get-layer canv :fg) pos))
 
-(defn make-atom-watch-fn [canv rabbit image-foreground image-background
-                          bunny-width bunny-height empty-colour border-colour
+(defn make-atom-watch-fn [canv document image-foreground image-background
+                          document-width document-height empty-colour border-colour
                           texture-width texture-height]
   (fn [key atom old-state
        {:keys [scale highlights offset width height]}]
-    (s/set-scale! rabbit scale)
+    (s/set-scale! document scale)
     (when width
       (log "setting width:" width)
       (set! (.-style.width (:canvas canv)) (str width))
@@ -296,7 +296,7 @@
     (when-not (= (:scale old-state) scale)
       (draw-image-background image-background scale
                              empty-colour border-colour
-                             bunny-width bunny-height))
+                             document-width document-height))
 
     (loop [[{:keys [pos size]} & t] highlights]
       (graphics/draw-foreground-rectangle
@@ -305,8 +305,9 @@
       (when (seq t)
         (recur t)))))
 
-(defn image-canvas-did-mount [data-atom & {:keys [url]
-                                           :or {url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"}}]
+(defn image-canvas-did-mount
+  [data-atom & {:keys [url]
+                :or {url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"}}]
   (fn [this]
     (log "component-did-mount")
     (let [canv (c/init
@@ -315,35 +316,35 @@
 
                  ;; canvas width and geight from the dom node are wrong at this point
                  ;; so to keep aspect ratio correct we pass them in
-                 ;:width width :height height
+                                        ;:width width :height height
 
                  :canvas (reagent/dom-node this)})]
       (go
         (<! (r/load-resources canv :fg [url]))
 
-        (let [rabbit-texture (r/get-texture
-                              (url-keyword url)
-                              :nearest)
-              texture-width (.-width rabbit-texture)
-              texture-height (.-height rabbit-texture)
+        (let [document-texture (r/get-texture
+                                (url-keyword url)
+                                :nearest)
+              texture-width (.-width document-texture)
+              texture-height (.-height document-texture)
               empty-colour 0x800000
               border-colour 0xffffff
               highlight-colour 0xff00ff
-              bunny-width texture-width
-              bunny-height texture-height
+              document-width texture-width
+              document-height texture-height
               scale (get @data-atom :scale 3)
               full-colour 0x0000ff]
-          (t/set-texture! :spritesheet rabbit-texture)
+          (t/set-texture! :spritesheet document-texture)
 
           (m/with-sprite canv :image
-            [rabbit (s/make-sprite :spritesheet :scale scale)]
+            [document (s/make-sprite :spritesheet :scale scale)]
             (let [image-background (js/PIXI.Graphics.)
                   image-foreground (js/PIXI.Graphics.)]
               (set! (.-interactive image-background) true)
               (set! (.-mousedown image-background) #(.log js/console "bg:" %))
 
               (set! (.-oncontextmenu (:canvas canv))
-                      (fn [e] (.preventDefault e)))
+                    (fn [e] (.preventDefault e)))
 
               (canvas-control (:canvas canv) data-atom
                               texture-width texture-height)
@@ -354,7 +355,7 @@
 
               (draw-image-background image-background scale
                                      empty-colour border-colour
-                                     bunny-width bunny-height)
+                                     document-width document-height)
 
               (.addChild (m/get-layer canv :bg) image-background)
               (.addChild (m/get-layer canv :fg) image-foreground)
@@ -363,10 +364,12 @@
 
               ;; add watcher? These will bunch
               ;; up on load unless we remove them
-              (add-watch data-atom :dummy
-                         (make-atom-watch-fn canv rabbit image-foreground image-background
-                          bunny-width bunny-height empty-colour border-colour
-                          texture-width texture-height))
+              (add-watch
+               data-atom :dummy
+               (make-atom-watch-fn
+                canv document image-foreground image-background
+                document-width document-height empty-colour border-colour
+                texture-width texture-height))
 
               (loop [f 0]
                 (<! (e/next-frame))
