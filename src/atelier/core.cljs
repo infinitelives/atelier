@@ -79,7 +79,7 @@
                      (not=
                       (get-in o path)
                       (get-in n path))
-                   (reset! curs (get-in n path)))))
+                   (deref curs))))
     curs))
 
 (defn simple-component []
@@ -106,7 +106,6 @@
 
 (render-simple)
 
-
 (update-atoms! (int (* (.-innerWidth js/window) 0.75)))
 
 (defonce resize-thread
@@ -116,10 +115,9 @@
           (update-atoms! 500)))))
 
 ;; hacky bugfix
-
-(go (<! (timeout 2000))
+#_ (go (<! (timeout 2000))
     (update-atoms! (int (* (.-innerWidth js/window) 0.7))))
 
 ;; test image load
-(go (<! (timeout 4000))
+#_ (go (<! (timeout 4000))
     (swap! state assoc-in [:canvas :url] "https://retrogradeorbit.github.io/biscuit-switch/img/sprites.png"))
