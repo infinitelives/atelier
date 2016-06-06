@@ -280,7 +280,7 @@
                           document-width document-height empty-colour border-colour
                           texture-width texture-height]
   (fn [key atom old-state
-       {:keys [scale highlights offset width height]}]
+       {:keys [scale highlights offset width height url]}]
     (s/set-scale! document scale)
     (when width
       (log "setting width:" width)
@@ -298,6 +298,21 @@
                              empty-colour border-colour
                              document-width document-height))
 
+    (when-not (= (:url old-state) url)
+      (log "URL changed" url)
+      (go
+        ;; load new image
+        (<! (r/load-resources canv :fg [url]))
+
+        (t/set-texture!
+         :spritesheet
+         (r/get-texture
+          (url-keyword url)
+          :nearest))
+
+        )
+      )
+
     (loop [[{:keys [pos size]} & t] highlights]
       (graphics/draw-foreground-rectangle
        image-foreground scale
@@ -306,11 +321,11 @@
         (recur t)))))
 
 (defn image-canvas-did-mount
-  [data-atom & {:keys [url]
-                :or {url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"}}]
+  [data-atom]
   (fn [this]
     (log "component-did-mount")
-    (let [canv (c/init
+    (let [url (:url @data-atom)
+          canv (c/init
                 {:layers [:bg :image :fg]
                  :background 0x404040
 

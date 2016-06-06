@@ -40,6 +40,7 @@
              }
 
     :canvas {
+             :url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
              :highlights [
                           {:pos [9 12]
                            :size [1 10]}
@@ -48,6 +49,7 @@
              :offset [0 0]
              :width 200
              :height 400
+
              }
 
     :partition {:x 200}}))
@@ -117,3 +119,7 @@
 
 (go (<! (timeout 2000))
     (update-atoms! (int (* (.-innerWidth js/window) 0.7))))
+
+;; test image load
+(go (<! (timeout 4000))
+    (swap! state assoc-in [:canvas :url] "https://retrogradeorbit.github.io/biscuit-switch/img/sprites.png"))
