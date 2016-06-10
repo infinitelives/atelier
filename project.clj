@@ -16,8 +16,8 @@
                  [cljsjs/highlight "8.4-0"]
                  [cljsjs/codemirror "5.11.0-1"]
 
-                 [infinitelives.pixi/infinitelives.pixi "0.1.0-SNAPSHOT"]
-                 [infinitelives.utils/infinitelives.utils "0.1.0-SNAPSHOT"]
+                 [infinitelives/infinitelives.pixi "0.1.0-SNAPSHOT"]
+                 [infinitelives/infinitelives.utils "0.1.0-SNAPSHOT"]
                  ]
 
   :plugins [[lein-figwheel "0.5.3"]
