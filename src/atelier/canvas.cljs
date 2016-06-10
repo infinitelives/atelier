@@ -282,11 +282,11 @@
   (fn [key atom old-state
        {:keys [scale highlights offset width height url]}]
     (s/set-scale! document scale)
-    (when width
-      (log "setting width:" width)
+    (when (and width height)
+      (log "setting size:" width height)
       (set! (.-style.width (:canvas canv)) (str width))
-      ((:resize-fn canv)
-       width (.-innerHeight js/window)))
+      (set! (.-style.height (:canvas canv)) (str height))
+      ((:resize-fn canv) width height))
 
     (let [[x y] offset]
       (set-canvas-pos! canv [(- x) (- y)]))
@@ -321,79 +321,89 @@
         (recur t)))))
 
 (defn image-canvas-did-mount
-  [data-atom]
+  [data-atom ui-control-fn]
   (fn [this]
     (log "component-did-mount")
     (let [url (:url @data-atom)
+          width (:width @data-atom)
+          height (:height @data-atom)
           canv (c/init
                 {:layers [:bg :image :fg]
                  :background 0x404040
-
-                 ;; canvas width and geight from the dom node are wrong at this point
-                 ;; so to keep aspect ratio correct we pass them in
-                                        ;:width width :height height
-
+                 :width width :height height
                  :canvas (reagent/dom-node this)})]
       (go
-        (<! (r/load-resources canv :fg [url]))
+        (loop []
+          (if url
+            (do
+              (<! (r/load-resources canv :fg [url]))
 
-        (let [document-texture (r/get-texture
-                                (url-keyword url)
-                                :nearest)
-              texture-width (.-width document-texture)
-              texture-height (.-height document-texture)
-              empty-colour 0x800000
-              border-colour 0xffffff
-              highlight-colour 0xff00ff
-              document-width texture-width
-              document-height texture-height
-              scale (get @data-atom :scale 3)
-              full-colour 0x0000ff]
-          (t/set-texture! :spritesheet document-texture)
+              (let [document-texture (r/get-texture
+                                      (url-keyword url)
+                                      :nearest)
+                    texture-width (.-width document-texture)
+                    texture-height (.-height document-texture)
+                    empty-colour 0x800000
+                    border-colour 0xffffff
+                    highlight-colour 0xff00ff
+                    document-width texture-width
+                    document-height texture-height
+                    scale (get @data-atom :scale 3)
+                    full-colour 0x0000ff]
+                (t/set-texture! :spritesheet document-texture)
 
-          (m/with-sprite canv :image
-            [document (s/make-sprite :spritesheet :scale scale)]
-            (let [image-background (js/PIXI.Graphics.)
-                  image-foreground (js/PIXI.Graphics.)]
-              (set! (.-interactive image-background) true)
-              (set! (.-mousedown image-background) #(.log js/console "bg:" %))
+                (m/with-sprite canv :image
+                  [document (s/make-sprite :spritesheet :scale scale)]
+                  (let [image-background (js/PIXI.Graphics.)
+                        image-foreground (js/PIXI.Graphics.)]
+                    (set! (.-interactive image-background) true)
+                    (set! (.-mousedown image-background) #(.log js/console "bg:" %))
 
-              (set! (.-oncontextmenu (:canvas canv))
-                    (fn [e] (.preventDefault e)))
+                    (set! (.-oncontextmenu (:canvas canv))
+                          (fn [e] (.preventDefault e)))
 
-              (canvas-control (:canvas canv) data-atom
-                              texture-width texture-height)
+                    (ui-control-fn
+                     ;canvas-control
+                     (:canvas canv) data-atom
+                                    texture-width texture-height)
 
-              (graphics/draw-foreground-rectangle
-               image-foreground scale
-               [9 10] [1 10] [texture-width texture-height])
+                    (graphics/draw-foreground-rectangle
+                     image-foreground scale
+                     [9 10] [1 10] [texture-width texture-height])
 
-              (draw-image-background image-background scale
-                                     empty-colour border-colour
-                                     document-width document-height)
+                    (draw-image-background image-background scale
+                                           empty-colour border-colour
+                                           document-width document-height)
 
-              (.addChild (m/get-layer canv :bg) image-background)
-              (.addChild (m/get-layer canv :fg) image-foreground)
+                    (.addChild (m/get-layer canv :bg) image-background)
+                    (.addChild (m/get-layer canv :fg) image-foreground)
 
-              (set-canvas-pos! canv [0 0])
+                    (set-canvas-pos! canv [0 0])
 
-              ;; add watcher? These will bunch
-              ;; up on load unless we remove them
-              (add-watch
-               data-atom :dummy
-               (make-atom-watch-fn
-                canv document image-foreground image-background
-                document-width document-height empty-colour border-colour
-                texture-width texture-height))
+                    ;; add watcher? These will bunch
+                    ;; up on load unless we remove them
+                    (add-watch
+                     data-atom :dummy
+                     (make-atom-watch-fn
+                      canv document image-foreground image-background
+                      document-width document-height empty-colour border-colour
+                      texture-width texture-height))
 
-              (loop [f 0]
-                (<! (e/next-frame))
-                (recur (inc f))))))))))
+                    (loop [f 0]
+                      (<! (e/next-frame))
+                      (recur (inc f)))))))
 
-(defn image-canvas [data-atom]
+                                        ;no url. leave canvas blank
+            (do
+              (<! (e/next-frame))
+              (recur))
+            ))))))
+
+(defn image-canvas [data-atom & {:keys [ui-control-fn]
+                                 :or {ui-control-fn (fn [c a w h] nil)}}]
   [(with-meta
      (fn [] [:canvas])
-     {:component-did-mount (image-canvas-did-mount data-atom)})])
+     {:component-did-mount (image-canvas-did-mount data-atom ui-control-fn)})])
 
 ;;
 ;; Devcards
@@ -406,7 +416,7 @@ Note: This widget is for representing infinitelives textures
 
 (defcard card-component-canvas
   "A basic pixi canvas with different shape."
-  (reagent/as-element [image-canvas (atom nil)]))
+  (reagent/as-element [image-canvas (atom {:width 100 :height 100})]))
 
 
 (defcard card-component-canvas
@@ -414,36 +424,42 @@ Note: This widget is for representing infinitelives textures
   (fn [data-atom owner]
     (reagent/as-element
      [:div
-          [image-canvas data-atom]
-          [:p "scale: "
-           [:button {:on-click #(swap! data-atom update :scale dec)} "-"]
-           [:button {:on-click #(swap! data-atom update :scale inc)} "+"]]
-          [:p "offset: "
-           [:button {:on-click #(swap! data-atom update-in [:offset 0] - 5)} "left"]
-           [:button {:on-click #(swap! data-atom update-in [:offset 0] + 5)} "right"]
-           [:button {:on-click #(swap! data-atom update-in [:offset 1] - 5)} "up"]
-           [:button {:on-click #(swap! data-atom update-in [:offset 1] + 5)} "down"]]
-          [:p
-           [:button
-            {:on-click
-             #(swap! data-atom update-in [:highlights 0]
-                     assoc
-                     :pos [(int (* 24 (rand)))
-                           (int (* 24 (rand)))]
-                     :size [(inc (int (* 10 (rand))))
-                            (inc (int (* 10 (rand))))])}
-            "highlight"]]]))
+      [image-canvas data-atom]
+      [:p "scale: "
+       [:button {:on-click #(swap! data-atom update :scale dec)} "-"]
+       [:button {:on-click #(swap! data-atom update :scale inc)} "+"]]
+      [:p "offset: "
+       [:button {:on-click #(swap! data-atom update-in [:offset 0] - 5)} "left"]
+       [:button {:on-click #(swap! data-atom update-in [:offset 0] + 5)} "right"]
+       [:button {:on-click #(swap! data-atom update-in [:offset 1] - 5)} "up"]
+       [:button {:on-click #(swap! data-atom update-in [:offset 1] + 5)} "down"]]
+      [:p "size: "
+       [:button {:on-click #(swap! data-atom update-in [:width] + 5)} "wider"]
+       [:button {:on-click #(swap! data-atom update-in [:width] - 5)} "narrower"]
+       [:button {:on-click #(swap! data-atom update-in [:height] + 5)} "taller"]
+       [:button {:on-click #(swap! data-atom update-in [:height] - 5)} "shorter"]]
+      [:p
+       [:button
+        {:on-click
+         #(swap! data-atom update-in [:highlights 0]
+                 assoc
+                 :pos [(int (* 24 (rand)))
+                       (int (* 24 (rand)))]
+                 :size [(inc (int (* 10 (rand))))
+                        (inc (int (* 10 (rand))))])}
+        "highlight"]]]))
   {
    :highlights
    [{:pos [9 12]
      :size [1 10]}]
    :scale 3
    :offset [0 0]
+   :width 200 :height 200
+   :url "http://www.goodboydigital.com/pixijs/examples/1/bunny.png"
    }
   {:inspect-data true
    :history true
    })
-
 
 (defcard card-component-canvas-draggable
   "A basic pixi canvas with changable scale and highlight box. Right click
@@ -453,7 +469,7 @@ and drag to reposition canvas. mouse wheel to zoom. Left click and drag to selec
   (fn [data-atom owner]
     (reagent/as-element
      [:div
-      [image-canvas data-atom]]))
+      [image-canvas data-atom :ui-control-fn canvas-control]]))
   {
    :highlights
    [{
@@ -461,5 +477,7 @@ and drag to reposition canvas. mouse wheel to zoom. Left click and drag to selec
      :size [1 10]}]
    :scale 3
    :offset [0 0]
+   :width 300 :height 300
+   :url "http://www.goodboydigital.com/pixijs/examples/1/bunny.png"
    }
   {:inspect-data true})
