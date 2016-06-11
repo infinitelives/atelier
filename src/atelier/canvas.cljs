@@ -348,7 +348,9 @@
 
     (draw-image-background image-background scale
                            empty-colour border-colour
-                           document-width document-height)))
+                           document-width document-height)
+
+    document-texture))
 
 (defn image-canvas-did-mount
   [data-atom ui-control-fn]
@@ -368,19 +370,11 @@
             (do
               (<! (r/load-resources canv :fg [url]))
 
-              (let [document-texture (r/get-texture
-                                      (url-keyword url)
-                                      :nearest)
-                    texture-width (.-width document-texture)
-                    texture-height (.-height document-texture)
-                    empty-colour 0x800000
-                    border-colour 0xffffff
-                    highlight-colour 0xff00ff
-                    document-width texture-width
-                    document-height texture-height
-                    scale (get @data-atom :scale 3)
-                    full-colour 0x0000ff
-                    ]
+              (let [document-texture (setup-canvas-image
+                                      url document scale image-background image-foreground
+                                      {})
+                    document-width (.-width document-texture)
+                    document-height (.-height document-texture)]
                 (t/set-texture! :spritesheet document-texture)
 
                 (m/with-sprite canv :image
