@@ -2,7 +2,8 @@
   (:require [reagent.core :as reagent]
             [clojure.string :as string]
 
-            [atelier.canvas.core :as canvas]
+            [atelier.canvas.canvas :as canvas]
+            [atelier.canvas.devcards :as devcards]
             [atelier.code :as code]
             [atelier.partition :as partition]
 

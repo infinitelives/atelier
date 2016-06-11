@@ -2,6 +2,7 @@
   (:require [infinitelives.utils.math :as math]
             [infinitelives.utils.vec2 :as vec2]
             [infinitelives.utils.events :as events]
+            [atelier.canvas.coord :as coord]
             [cljs.core.async :refer [<! chan put! alts!]])
   (:require-macros
    [cljs.core.async.macros :refer [go alt!]]))
@@ -9,7 +10,6 @@
 ;; pass key handler defaults through so codemirror
 ;; handlers continue to work
 (events/allow-key-defaults)
-
 
 (defn selection-drag [canvas->local-fn sethighlight-fn
                       mouse-up mouse-move mouse-wheel]
@@ -55,14 +55,14 @@
         co-ord (vec2/vec2 md-x md-y)
 
         ;; this pixel has to stay at the cursor position after zoom
-        local-offset (canvas->local canvas [x y]
+        local-offset (coord/canvas->local canvas [x y]
                                     (getpos-fn)
                                     [texture-width texture-height]
                                     (getscale-fn))
 
         ;; calculate the new canvas offset to keep this pixel there on the canvas
         new-scale (+ (Math/sign ox) scale)
-        new-offset (local->canvas canvas local-offset co-ord
+        new-offset (coord/local->canvas canvas local-offset co-ord
                                   [start-x start-y]
                                   [texture-width texture-height]
                                   new-scale)]
@@ -93,7 +93,7 @@
               ;; mouse RMB down. drag canvas
               (let [[start-x start-y] (getpos-fn)]
                 (<! (drag-canvas
-                     #(canvas->local
+                     #(coord/canvas->local
                        canvas % (getpos-fn)
                        [texture-width texture-height]
                        (getscale-fn))
@@ -111,12 +111,12 @@
               (let [bounds (.getBoundingClientRect canvas)
                     top (.-top bounds)
                     left (.-left bounds)
-                    local-offset (canvas->local canvas [ox oy]
+                    local-offset (coord/canvas->local canvas [ox oy]
                                                 (getpos-fn)
                                                 [texture-width texture-height]
                                                 (getscale-fn))]
                 (<! (selection-drag
-                     #(canvas->local
+                     #(coord/canvas->local
                        canvas % (getpos-fn)
                        [texture-width texture-height]
                        (getscale-fn))

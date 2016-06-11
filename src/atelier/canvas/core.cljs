@@ -83,7 +83,7 @@
 
 (defn make-atom-watch-fn [canv document image-foreground image-background
                           document-width document-height empty-colour border-colour
-                          texture-width texture-height]
+                          document-width document-height]
   (fn [key atom old-state
        {:keys [scale highlights offset width height url]}]
 
@@ -132,13 +132,17 @@
 
     document-texture))
 
+(def foreground-drawing-options
+  {:empty-colour 0x800000
+   :border-colour 0xffffff
+   :highlight-colour 0xff00ff
+   :full-colour 0x0000ff})
+
 (defn image-canvas-did-mount
   [data-atom ui-control-fn]
   (fn [this]
     (log "component-did-mount")
-    (let [url (:url @data-atom)
-          width (:width @data-atom)
-          height (:height @data-atom)
+    (let [{:keys [url width height scale]} @data-atom
           canv (c/init
                 {:layers [:bg :image :fg]
                  :background 0x404040
@@ -150,61 +154,63 @@
             (do
               (<! (r/load-resources canv :fg [url]))
 
-              (let [document-texture (setup-canvas-image
-                                      url document scale image-background image-foreground
-                                      {})
-                    document-width (.-width document-texture)
-                    document-height (.-height document-texture)]
-                (t/set-texture! :spritesheet document-texture)
+              (m/with-sprite canv :image
+                [document (s/make-sprite :spritesheet :scale scale)]
+                (let [image-background (js/PIXI.Graphics.)
+                      image-foreground (js/PIXI.Graphics.)
+                      document-texture (setup-canvas-image
+                                        url document scale image-background image-foreground
+                                        foreground-drawing-options)
+                      document-width (.-width document-texture)
+                      document-height (.-height document-texture)
+                      ]
+                  (t/set-texture! :spritesheet document-texture)
+                  (set! (.-interactive image-background) true)
+                  (set! (.-mousedown image-background) #(.log js/console "bg:" %))
 
-                (m/with-sprite canv :image
-                  [document (s/make-sprite :spritesheet :scale scale)]
-                  (let [image-background (js/PIXI.Graphics.)
-                        image-foreground (js/PIXI.Graphics.)]
-                    (set! (.-interactive image-background) true)
-                    (set! (.-mousedown image-background) #(.log js/console "bg:" %))
+                  (set! (.-oncontextmenu (:canvas canv))
+                        (fn [e] (.preventDefault e)))
 
-                    (set! (.-oncontextmenu (:canvas canv))
-                          (fn [e] (.preventDefault e)))
+                  (ui-control-fn
+                   (:canvas canv) data-atom
+                   document-width document-height)
 
-                    (ui-control-fn
-                     (:canvas canv) data-atom
-                     texture-width texture-height)
+                  (setup-canvas-image
+                   url document (:scale @data-atom) image-background image-foreground
+                   {})
 
-                    (setup-canvas-image
-                           url document (:scale @data-atom) image-background image-foreground
-                           {})
+                  (.addChild (m/get-layer canv :bg) image-background)
+                  (.addChild (m/get-layer canv :fg) image-foreground)
 
-                    (.addChild (m/get-layer canv :bg) image-background)
-                    (.addChild (m/get-layer canv :fg) image-foreground)
+                  (set-canvas-pos! canv [0 0])
 
-                    (set-canvas-pos! canv [0 0])
+                  (add-watch
+                   data-atom :dummy
+                   (make-atom-watch-fn
+                    canv document image-foreground image-background
+                    document-width document-height
+                    (:empty-colour foreground-drawing-options)
+                    (:border-colour foreground-drawing-options)
+                    document-width document-height))
 
-                    (add-watch
-                     data-atom :dummy
-                     (make-atom-watch-fn
-                      canv document image-foreground image-background
-                      document-width document-height empty-colour border-colour
-                      texture-width texture-height))
+                  (loop [f 0 url url]
 
-                    (loop [f 0 url url]
+                    (<! (e/next-frame))
 
-                      (<! (e/next-frame))
+                    (when (not= url (:url @data-atom))
+                      (log "changed from:" url "to:" (:url @data-atom))
 
-                      (when (not= url (:url @data-atom))
-                        (log "changed from:" url "to:" (:url @data-atom))
+                      (let [url (:url @data-atom)]
+                        (log "URL changed" url)
 
-                        (let [url (:url @data-atom)]
-                          (log "URL changed" url)
+                        ;; load new image
+                        (<! (r/load-resources canv :fg [url] :fade-in 0.01 :fade-out 0.01))
 
-                          ;; load new image
-                          (<! (r/load-resources canv :fg [url] :fade-in 0.01 :fade-out 0.01))
+                        (setup-canvas-image
+                         url document (:scale @data-atom) image-background image-foreground
+                         {})))
 
-                          (setup-canvas-image
-                           url document (:scale @data-atom) image-background image-foreground
-                           {})))
-
-                      (recur (inc f) (:url @data-atom)))))))
+                    (recur (inc f) (:url @data-atom))))))
 
                                         ;no url. leave canvas blank
             (do

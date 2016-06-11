@@ -1,8 +1,9 @@
 (ns atelier.canvas.devcards
-  (:require [reagent.core :as reagent])
+  (:require [reagent.core :as reagent]
+            [atelier.canvas.canvas :as canvas]
+            [atelier.canvas.events :as events])
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]]))
-
 ;;
 ;; Devcards
 ;;
@@ -14,7 +15,7 @@ Note: This widget is for representing infinitelives textures
 
 (defcard card-component-canvas
   "A basic pixi canvas with different shape."
-  (reagent/as-element [image-canvas (atom {:width 100 :height 100})]))
+  (reagent/as-element [canvas/image-canvas (atom {:width 100 :height 100})]))
 
 
 (defcard card-component-canvas
@@ -22,7 +23,7 @@ Note: This widget is for representing infinitelives textures
   (fn [data-atom owner]
     (reagent/as-element
      [:div
-      [image-canvas data-atom]
+      [canvas/image-canvas data-atom]
       [:p "scale: "
        [:button {:on-click #(swap! data-atom update :scale dec)} "-"]
        [:button {:on-click #(swap! data-atom update :scale inc)} "+"]]
@@ -78,7 +79,7 @@ and drag to reposition canvas. mouse wheel to zoom. Left click and drag to selec
   (fn [data-atom owner]
     (reagent/as-element
      [:div
-      [image-canvas data-atom :ui-control-fn canvas-control]]))
+      [canvas/image-canvas data-atom :ui-control-fn events/canvas-control]]))
   {
    :highlights
    [{
