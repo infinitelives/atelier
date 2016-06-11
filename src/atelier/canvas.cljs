@@ -225,9 +225,7 @@
   (let [mouse-down (chan 1)
         mouse-up (chan 1)
         mouse-move (chan 1)
-        mouse-wheel (chan 1)
-        mouse-out (chan 1)
-        mouse-over (chan 1)]
+        mouse-wheel (chan 1)]
     (.addEventListener el "mousedown"
                        (make-channel-processing-fn mouse-down :prevent-default))
     (.addEventListener js/window "mouseup"
