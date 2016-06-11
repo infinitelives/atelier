@@ -1,27 +1,28 @@
 (ns atelier.canvas.core
   (:require [reagent.core :as reagent]
-;            [infinitelives.pixi.canvas :as c]
-;            [infinitelives.pixi.events :as e]
-;            [infinitelives.pixi.resources :as r]
-;            [infinitelives.pixi.texture :as t]
+           [infinitelives.pixi.canvas :as c]
+           [infinitelives.pixi.events :as e]
+           [infinitelives.pixi.resources :as r]
+           [infinitelives.pixi.texture :as t]
             [infinitelives.pixi.sprite :as s]
 ;            [infinitelives.pixi.pixelfont :as pf]
 ;            [infinitelives.utils.math :as math]
 ;            [infinitelives.utils.vec2 :as vec2]
 ;            [infinitelives.utils.events :as events]
 ;            [infinitelives.utils.sound :as sound]
-;            [infinitelives.utils.string :refer [url-keyword]]
-;            [infinitelives.utils.console :refer [log]]
+            [infinitelives.utils.string :refer [url-keyword]]
+            [infinitelives.utils.console :refer [log]]
 
-;            [cljs.core.async :refer [<! chan put! alts!]]
+            [cljs.core.async :refer [<! chan put! alts!]]
 
-;            [atelier.graphics :as graphics]
+            [atelier.canvas.devcards :as devcards]
+            [atelier.graphics :as graphics]
             )
 
   (:require-macros
 ;   [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]]
-;   [cljs.core.async.macros :refer [go alt!]]
-;   [infinitelives.pixi.macros :as m]
+   [cljs.core.async.macros :refer [go alt!]]
+   [infinitelives.pixi.macros :as m]
    )
   )
 

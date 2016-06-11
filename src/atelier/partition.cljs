@@ -1,11 +1,9 @@
 (ns atelier.partition
   (:require [reagent.core :as reagent]
-            [atelier.canvas :as canvas]
-            [atelier.code :as code]
-
-            [infinitelives.utils.console :refer [log]]
-            [infinitelives.utils.events :as events]
-            [cljs.core.async :refer [<! chan put! alts! timeout]])
+;            [infinitelives.utils.console :refer [log]]
+;            [infinitelives.utils.events :as events]
+            [cljs.core.async :refer [<! chan put! alts! timeout]]
+            )
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]]
    [cljs.core.async.macros :refer [go alt!]]))
