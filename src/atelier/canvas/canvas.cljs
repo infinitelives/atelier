@@ -1,26 +1,18 @@
 (ns atelier.canvas.canvas
   (:require [reagent.core :as reagent]
-           [infinitelives.pixi.canvas :as c]
-           [infinitelives.pixi.events :as e]
-           [infinitelives.pixi.resources :as r]
-           [infinitelives.pixi.texture :as t]
+            [infinitelives.pixi.canvas :as c]
+            [infinitelives.pixi.events :as e]
+            [infinitelives.pixi.resources :as r]
+            [infinitelives.pixi.texture :as t]
             [infinitelives.pixi.sprite :as s]
-;            [infinitelives.pixi.pixelfont :as pf]
-;            [infinitelives.utils.math :as math]
-;            [infinitelives.utils.vec2 :as vec2]
-;            [infinitelives.utils.events :as events]
-;            [infinitelives.utils.sound :as sound]
             [infinitelives.utils.string :refer [url-keyword]]
             [infinitelives.utils.console :refer [log]]
 
             [cljs.core.async :refer [<! chan put! alts!]]
-            [atelier.graphics :as graphics]
-            )
+            [atelier.graphics :as graphics])
   (:require-macros
    [cljs.core.async.macros :refer [go alt!]]
-   [infinitelives.pixi.macros :as m]
-   )
-  )
+   [infinitelives.pixi.macros :as m]))
 
 
 (defn- draw-image-background [image-background scale
@@ -123,10 +115,6 @@
     (t/set-texture! :spritesheet document-texture)
     (s/set-texture! document document-texture)
 
-    ;; (graphics/draw-foreground-rectangle
-    ;;  image-foreground scale
-    ;;  [9 10] [1 10] [document-width document-height])
-
     (draw-image-background image-background scale
                            empty-colour border-colour
                            document-width document-height)
@@ -169,8 +157,6 @@
                       ]
                   (t/set-texture! :spritesheet document-texture)
                   (set! (.-interactive image-background) true)
-                  (set! (.-mousedown image-background) #(.log js/console "bg:" %))
-
                   (set! (.-oncontextmenu (:canvas canv))
                         (fn [e] (.preventDefault e)))
 
