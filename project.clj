@@ -29,15 +29,6 @@
 
   :cljsbuild {:builds
               [
-               {:id "devcards"
-                :source-paths ["src"]
-                :figwheel { :devcards true }
-                :compiler { :main       "atelier.core"
-                           :asset-path "js/compiled/devcards_out"
-                           :output-to  "resources/public/js/compiled/atelier_devcards.js"
-                           :output-dir "resources/public/js/compiled/devcards_out"
-                           :source-map-timestamp true }    }
-
                {:id "dev"
                 :source-paths ["src"]
 
@@ -49,6 +40,17 @@
                            :output-to "resources/public/js/compiled/atelier.js"
                            :output-dir "resources/public/js/compiled/out"
                            :source-map-timestamp true}}
+
+               ;; devcards build
+               {:id "devcards"
+                :source-paths ["src"]
+                :figwheel { :devcards true }
+                :compiler { :main       "atelier.core"
+                           :asset-path "js/compiled/devcards_out"
+                           :output-to  "resources/public/js/compiled/atelier_devcards.js"
+                           :output-dir "resources/public/js/compiled/devcards_out"
+                           :source-map-timestamp true }    }
+
                ;; This next build is an compressed minified build for
                ;; production. You can build this with:
                ;; lein cljsbuild once min
