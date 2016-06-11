@@ -296,20 +296,7 @@
                              empty-colour border-colour
                              document-width document-height))
 
-    (when-not (= (:url old-state) url)
-      (log "URL changed" url)
-      (go
-        ;; load new image
-        (<! (r/load-resources canv :fg [url]))
 
-        (t/set-texture!
-         :spritesheet
-         (r/get-texture
-          (url-keyword url)
-          :nearest))
-
-        )
-      )
 
     (loop [[{:keys [pos size]} & t] highlights]
       (graphics/draw-foreground-rectangle
@@ -347,7 +334,8 @@
                     document-width texture-width
                     document-height texture-height
                     scale (get @data-atom :scale 3)
-                    full-colour 0x0000ff]
+                    full-colour 0x0000ff
+                    ]
                 (t/set-texture! :spritesheet document-texture)
 
                 (m/with-sprite canv :image
@@ -361,9 +349,8 @@
                           (fn [e] (.preventDefault e)))
 
                     (ui-control-fn
-                     ;canvas-control
                      (:canvas canv) data-atom
-                                    texture-width texture-height)
+                     texture-width texture-height)
 
                     (graphics/draw-foreground-rectangle
                      image-foreground scale
@@ -387,9 +374,36 @@
                       document-width document-height empty-colour border-colour
                       texture-width texture-height))
 
-                    (loop [f 0]
+                    (loop [f 0 url url]
+
                       (<! (e/next-frame))
-                      (recur (inc f)))))))
+
+                      (when (not= url (:url @data-atom))
+                        (log "changed from:" url "to:" (:url @data-atom))
+
+                        (let [url (:url @data-atom)]
+                          (log "URL changed" url)
+
+                          ;; load new image
+                          (<! (r/load-resources canv :fg [url] :fade-in 0.01 :fade-out 0.01))
+
+                          (t/set-texture!
+                           :spritesheet
+                           (r/get-texture
+                            (url-keyword url)
+                            :nearest))
+
+                          (s/set-texture! document (r/get-texture
+                            (url-keyword url)
+                            :nearest))
+
+
+
+
+                          )
+                        )
+
+                      (recur (inc f) (:url @data-atom)))))))
 
                                         ;no url. leave canvas blank
             (do
@@ -432,10 +446,21 @@ Note: This widget is for representing infinitelives textures
        [:button {:on-click #(swap! data-atom update-in [:offset 1] - 5)} "up"]
        [:button {:on-click #(swap! data-atom update-in [:offset 1] + 5)} "down"]]
       [:p "size: "
-       [:button {:on-click #(swap! data-atom update-in [:width] + 5)} "wider"]
-       [:button {:on-click #(swap! data-atom update-in [:width] - 5)} "narrower"]
-       [:button {:on-click #(swap! data-atom update-in [:height] + 5)} "taller"]
-       [:button {:on-click #(swap! data-atom update-in [:height] - 5)} "shorter"]]
+       [:button {:on-click #(swap! data-atom update :width + 5)} "wider"]
+       [:button {:on-click #(swap! data-atom update :width - 5)} "narrower"]
+       [:button {:on-click #(swap! data-atom update :height + 5)} "taller"]
+       [:button {:on-click #(swap! data-atom update :height - 5)} "shorter"]]
+      [:p "image: "
+       [:select
+        {:on-change #(let [selection (.-target.value %)
+                           url-map {"bunny" "http://www.goodboydigital.com/pixijs/examples/1/bunny.png"
+                                    "moonhenge" "https://raw.githubusercontent.com/retrogradeorbit/moonhenge/master/resources/public/img/sprites.png"}
+                           ]
+                       (swap! data-atom assoc :url (url-map selection))
+                       )}
+        [:option "bunny"]
+        [:option "moonhenge"]]
+       ]
       [:p
        [:button
         {:on-click
