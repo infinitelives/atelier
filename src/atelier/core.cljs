@@ -4,7 +4,6 @@
 
             [atelier.canvas :as canvas]
             [atelier.code :as code]
-            [atelier.testing :as testing]
             [atelier.partition :as partition]
 
             [infinitelives.utils.console :refer [log]]
