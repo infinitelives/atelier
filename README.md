@@ -38,7 +38,7 @@ get live reloading, nor a REPL.
 
 To see the devcards run:
 
-	lein figwheel
+	lein figwheel devcards
 
 Then point your browser at [localhost:3449/cards.html](http://localhost:3449/cards.html).
 
