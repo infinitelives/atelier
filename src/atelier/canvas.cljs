@@ -274,36 +274,81 @@
   (apply s/set-pivot! (m/get-layer canv :image) pos)
   (apply s/set-pivot! (m/get-layer canv :fg) pos))
 
+(defn draw-all-highlight-rectangles! [sprite document-size scale [{:keys [pos size]} & tail]]
+  (graphics/draw-foreground-rectangle sprite scale pos size document-size)
+  (when (seq tail)
+    (recur sprite document-size scale tail)))
+
+(defn set-canvas-size! [canv [width height]]
+  (set! (.-style.width (:canvas canv)) (str width))
+  (set! (.-style.height (:canvas canv)) (str height))
+  ((:resize-fn canv) width height))
+
+(defn set-canvas-offset! [canv [x y]]
+  (set-canvas-pos! canv [(- x) (- y)]))
+
+(defn set-canvas-scale! [canv scale
+                         document [document-width document-height]
+                         image-background {:keys [empty-colour border-colour]}]
+  (s/set-scale! document scale)
+  (draw-image-background image-background scale
+                         empty-colour border-colour
+                         document-width document-height))
+
+(defn set-canvas-highlights! [canv image-foreground document-size scale highlights]
+  (.clear image-foreground)
+  (draw-all-highlight-rectangles! image-foreground document-size
+                                  scale highlights))
+
+
 (defn make-atom-watch-fn [canv document image-foreground image-background
                           document-width document-height empty-colour border-colour
                           texture-width texture-height]
   (fn [key atom old-state
        {:keys [scale highlights offset width height url]}]
-    (s/set-scale! document scale)
+
+    ;; canvas widget size
     (when (and width height)
-      (log "setting size:" width height)
-      (set! (.-style.width (:canvas canv)) (str width))
-      (set! (.-style.height (:canvas canv)) (str height))
-      ((:resize-fn canv) width height))
+      (set-canvas-size! canv [width height]))
 
-    (let [[x y] offset]
-      (set-canvas-pos! canv [(- x) (- y)]))
+    ;; offset changed
+    (when-not (= (:offset old-state) offset)
+      (set-canvas-offset! canv offset))
 
-    (.clear image-foreground)
-
+    ;; scale changed
     (when-not (= (:scale old-state) scale)
-      (draw-image-background image-background scale
-                             empty-colour border-colour
-                             document-width document-height))
+      (set-canvas-scale! canv scale document [document-width document-height]
+                         image-background {:empty-colour empty-colour
+                                           :border-colour border-colour}))
+
+    ;; highlights changed
+    (when-not (= (:highlights old-state) highlights)
+      (set-canvas-highlights! canv image-foreground [document-width document-height]
+                              scale highlights))))
 
 
+(defn setup-canvas-image [url document scale image-background image-foreground
+                          {:keys [empty-colour border-colour
+                                  highlight-colour full-colour]
+                           :or {empty-colour 0x800000
+                                border-colour 0xffffff
+                                highlight-colour 0xff00ff
+                                full-colour 0x0000ff}}]
+  (let [document-texture (r/get-texture
+                          (url-keyword url)
+                          :nearest)
+        document-width (.-width document-texture)
+        document-height (.-height document-texture)]
+    (t/set-texture! :spritesheet document-texture)
+    (s/set-texture! document document-texture)
 
-    (loop [[{:keys [pos size]} & t] highlights]
-      (graphics/draw-foreground-rectangle
-       image-foreground scale
-       pos size [texture-width texture-height])
-      (when (seq t)
-        (recur t)))))
+    (graphics/draw-foreground-rectangle
+     image-foreground scale
+     [9 10] [1 10] [document-width document-height])
+
+    (draw-image-background image-background scale
+                           empty-colour border-colour
+                           document-width document-height)))
 
 (defn image-canvas-did-mount
   [data-atom ui-control-fn]
@@ -352,21 +397,15 @@
                      (:canvas canv) data-atom
                      texture-width texture-height)
 
-                    (graphics/draw-foreground-rectangle
-                     image-foreground scale
-                     [9 10] [1 10] [texture-width texture-height])
-
-                    (draw-image-background image-background scale
-                                           empty-colour border-colour
-                                           document-width document-height)
+                    (setup-canvas-image
+                           url document (:scale @data-atom) image-background image-foreground
+                           {})
 
                     (.addChild (m/get-layer canv :bg) image-background)
                     (.addChild (m/get-layer canv :fg) image-foreground)
 
                     (set-canvas-pos! canv [0 0])
 
-                    ;; add watcher? These will bunch
-                    ;; up on load unless we remove them
                     (add-watch
                      data-atom :dummy
                      (make-atom-watch-fn
@@ -387,21 +426,9 @@
                           ;; load new image
                           (<! (r/load-resources canv :fg [url] :fade-in 0.01 :fade-out 0.01))
 
-                          (t/set-texture!
-                           :spritesheet
-                           (r/get-texture
-                            (url-keyword url)
-                            :nearest))
-
-                          (s/set-texture! document (r/get-texture
-                            (url-keyword url)
-                            :nearest))
-
-
-
-
-                          )
-                        )
+                          (setup-canvas-image
+                           url document (:scale @data-atom) image-background image-foreground
+                           {})))
 
                       (recur (inc f) (:url @data-atom)))))))
 
