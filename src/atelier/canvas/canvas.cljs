@@ -53,53 +53,54 @@
     (when (seq tail)
       (recur tail))))
 
-(defn set-canvas-size! [canv [width height]]
+(defn set-canvas-size! [canv {:keys [width height]}]
   (set! (.-style.width (:canvas canv)) (str width))
   (set! (.-style.height (:canvas canv)) (str height))
   ((:resize-fn canv) width height))
 
-(defn set-canvas-offset! [canv [x y]]
+(defn set-canvas-offset! [canv {[x y] :offset}]
   (set-canvas-pos! canv [(- x) (- y)]))
 
 (defn set-canvas-highlights! [canv image-foreground document-size data]
   (.clear image-foreground)
   (draw-all-highlight-rectangles! image-foreground document-size data))
 
-(defn set-canvas-scale! [canv document image-background image-foreground
+(defn set-canvas-scale! [canv
+                         {:keys [document image-background image-foreground]}
                          data background-options]
   (s/set-scale! document (:scale data))
   (draw-image-background image-background document data background-options)
   (set-canvas-highlights! canv image-foreground (get-document-size document) data))
 
-(defn make-atom-watch-fn [canv document image-foreground image-background
-                          empty-colour border-colour]
+(defn make-atom-watch-fn [canv
+                          {:keys [document image-foreground image-background] :as layers}
+                          {:keys [empty-colour border-colour] :as foreground-drawing-options}]
   (fn [key atom old-state
-       {:keys [scale highlights offset width height url]}]
+       {:keys [scale highlights offset width height url]
+        :as new-state}]
     ;; canvas widget size
     (when (and width height)
-      (set-canvas-size! canv [width height]))
+      (set-canvas-size! canv new-state))
 
     ;; offset changed
     (when-not (= (:offset old-state) offset)
-      (set-canvas-offset! canv offset))
+      (set-canvas-offset! canv new-state))
 
     ;; scale changed
     (when-not (= (:scale old-state) scale)
-      (set-canvas-scale! canv document image-background image-foreground
-                         {:scale scale
-                          :highlights highlights}
-                         {:empty-colour empty-colour
-                          :border-colour border-colour}))
+      (set-canvas-scale! canv layers new-state foreground-drawing-options))
 
     ;; highlights changed
     (when-not (= (:highlights old-state) highlights)
-      (set-canvas-highlights! canv image-foreground (get-document-size document)
-                              {:scale scale :highlights highlights}))))
+      (set-canvas-highlights! canv image-foreground (get-document-size document) new-state))))
 
 
-(defn setup-canvas-image [canv url document scale image-background image-foreground highlights
+(defn setup-canvas-image [canv
+                          {:keys [document image-foreground image-background]}
+                          {:keys [url scale highlights] :as data}
                           {:keys [empty-colour border-colour
                                   highlight-colour full-colour]
+                           :as foreground-drawing-options
                            :or {empty-colour 0x800000
                                 border-colour 0xffffff
                                 highlight-colour 0xff00ff
@@ -112,15 +113,10 @@
     (t/set-texture! :spritesheet document-texture)
     (s/set-texture! document document-texture)
 
-    (draw-image-background image-background document
-                           {:scale scale}
-                           {:empty-colour empty-colour
-                            :border-colour border-colour})
-
+    (draw-image-background image-background document data foreground-drawing-options)
     (set-canvas-highlights! canv image-foreground
                             [document-width document-height]
-                            {:scale scale
-                             :highlights highlights})
+                            data)
 
     document-texture))
 
@@ -150,37 +146,26 @@
                 [document (s/make-sprite :spritesheet :scale scale)]
                 (let [image-background (js/PIXI.Graphics.)
                       image-foreground (js/PIXI.Graphics.)
-                      document-texture (setup-canvas-image canv
-                                        url document scale image-background image-foreground highlights
-                                        foreground-drawing-options)
-                      document-width (.-width document-texture)
-                      document-height (.-height document-texture)
-                      ]
+                      layers {:image-foreground image-foreground
+                              :document document
+                              :image-background image-background}
+                      document-texture (setup-canvas-image canv layers @data-atom foreground-drawing-options)]
                   (t/set-texture! :spritesheet document-texture)
                   (set! (.-interactive image-background) true)
                   (set! (.-oncontextmenu (:canvas canv))
                         (fn [e] (.preventDefault e)))
 
-                  (ui-control-fn
-                   (:canvas canv) data-atom
-                   document-width document-height)
+                  (ui-control-fn (:canvas canv) data-atom (.-width document-texture) (.-height document-texture))
 
-                  (setup-canvas-image canv
-                   url document (:scale @data-atom) image-background image-foreground highlights
-                   {})
+                  (setup-canvas-image canv layers @data-atom foreground-drawing-options)
 
                   (.addChild (m/get-layer canv :bg) image-background)
                   (.addChild (m/get-layer canv :fg) image-foreground)
 
                   (set-canvas-pos! canv [0 0])
 
-                  (add-watch
-                   data-atom :dummy
-                   (make-atom-watch-fn
-                    canv document image-foreground image-background
-                    (:empty-colour foreground-drawing-options)
-                    (:border-colour foreground-drawing-options)
-                    ))
+                  (add-watch data-atom :dummy
+                   (make-atom-watch-fn canv layers foreground-drawing-options))
 
                   (loop [f 0 url url]
 
@@ -195,9 +180,7 @@
                         ;; load new image
                         (<! (r/load-resources canv :fg [url] :fade-in 0.01 :fade-out 0.01))
 
-                        (setup-canvas-image canv
-                         url document (:scale @data-atom) image-background image-foreground highlights
-                         {})))
+                        (setup-canvas-image canv layers @data-atom foreground-drawing-options)))
 
                     (recur (inc f) (:url @data-atom))))))
 
