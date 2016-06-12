@@ -131,41 +131,45 @@
   (fn [this]
     (log "component-did-mount")
     (let [{:keys [url width height scale highlights]} @data-atom
-          canv (c/init
-                {:layers [:bg :image :fg]
-                 :background 0x404040
-                 :width width :height height
-                 :canvas (reagent/dom-node this)})]
+          canvas (c/init
+                  {:layers [:bg :image :fg]
+                   :background 0x404040
+                   :width width :height height
+                   :canvas (reagent/dom-node this)})]
       (go
         (loop []
           (if url
             (do
-              (<! (r/load-resources canv :fg [url]))
+              (<! (r/load-resources canvas :fg [url]))
 
-              (m/with-sprite canv :image
+              (m/with-sprite canvas :image
                 [document (s/make-sprite :spritesheet :scale scale)]
                 (let [image-background (js/PIXI.Graphics.)
                       image-foreground (js/PIXI.Graphics.)
                       layers {:image-foreground image-foreground
                               :document document
                               :image-background image-background}
-                      document-texture (setup-canvas-image canv layers @data-atom foreground-drawing-options)]
+                      document-texture (setup-canvas-image canvas layers @data-atom foreground-drawing-options)]
                   (t/set-texture! :spritesheet document-texture)
                   (set! (.-interactive image-background) true)
-                  (set! (.-oncontextmenu (:canvas canv))
+                  (set! (.-oncontextmenu (:canvas canvas))
                         (fn [e] (.preventDefault e)))
 
-                  (ui-control-fn (:canvas canv) data-atom (.-width document-texture) (.-height document-texture))
+                  ;; we need to keep the size of the document as state,
+                  ;; so that during a new image load we can alter it
+                  (swap! data-atom assoc :document-size (get-document-size document))
 
-                  (setup-canvas-image canv layers @data-atom foreground-drawing-options)
+                  (ui-control-fn (:canvas canvas) data-atom (.-width document-texture) (.-height document-texture))
 
-                  (.addChild (m/get-layer canv :bg) image-background)
-                  (.addChild (m/get-layer canv :fg) image-foreground)
+                  (setup-canvas-image canvas layers @data-atom foreground-drawing-options)
 
-                  (set-canvas-pos! canv [0 0])
+                  (.addChild (m/get-layer canvas :bg) image-background)
+                  (.addChild (m/get-layer canvas :fg) image-foreground)
+
+                  (set-canvas-pos! canvas [0 0])
 
                   (add-watch data-atom :dummy
-                   (make-atom-watch-fn canv layers foreground-drawing-options))
+                             (make-atom-watch-fn canvas layers foreground-drawing-options))
 
                   (loop [f 0 url url]
 
@@ -178,9 +182,9 @@
                         (log "URL changed" url)
 
                         ;; load new image
-                        (<! (r/load-resources canv :fg [url] :fade-in 0.01 :fade-out 0.01))
-
-                        (setup-canvas-image canv layers @data-atom foreground-drawing-options)))
+                        (<! (r/load-resources canvas :fg [url] :fade-in 0.01 :fade-out 0.01))
+                        (setup-canvas-image canvas layers @data-atom foreground-drawing-options)
+                        (swap! data-atom assoc :document-size (get-document-size document))))
 
                     (recur (inc f) (:url @data-atom))))))
 
