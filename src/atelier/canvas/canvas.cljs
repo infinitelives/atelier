@@ -15,27 +15,32 @@
    [infinitelives.pixi.macros :as m]))
 
 
-(defn- draw-image-background [image-background scale
-                              empty-colour border-colour
-                              document-width document-height]
-  (.clear image-background)
-  (graphics/draw-chessboard
-   image-background
-   :start-x (* scale -0.5 document-width)
-   :start-y (* scale -0.5 document-height)
-   :width (* scale document-width)
-   :height (* scale document-height)
-   :colour-1 0x8080ff
-   :colour-2 0xa0a0ff
-   :tile-width 24
-   :tile-height 24)
-  (doto image-background
-    (.beginFill empty-colour 0.0)
-    (.lineStyle 1 border-colour)
-    (.drawRect (dec (* scale -0.5 document-width))
-               (dec (* scale -0.5 document-height))
-               (inc (* scale document-width))
-               (inc (* scale document-height)))))
+(defn- get-document-size [document]
+  (let [texture (.-texture document)]
+    [(.-width texture) (.-height texture)]))
+
+(defn- draw-image-background [image-background document
+                              {:keys [scale]}
+                              {:keys [empty-colour border-colour]}]
+  (let [[document-width document-height] (get-document-size document)]
+    (.clear image-background)
+    (graphics/draw-chessboard
+     image-background
+     :start-x (* scale -0.5 document-width)
+     :start-y (* scale -0.5 document-height)
+     :width (* scale document-width)
+     :height (* scale document-height)
+     :colour-1 0x8080ff
+     :colour-2 0xa0a0ff
+     :tile-width 24
+     :tile-height 24)
+    (doto image-background
+      (.beginFill empty-colour 0.0)
+      (.lineStyle 1 border-colour)
+      (.drawRect (dec (* scale -0.5 document-width))
+                 (dec (* scale -0.5 document-height))
+                 (inc (* scale document-width))
+                 (inc (* scale document-height))))))
 
 (defn set-canvas-pos! [canv pos]
   (apply s/set-pivot! (m/get-layer canv :bg) pos)
@@ -60,44 +65,41 @@
   (draw-all-highlight-rectangles! image-foreground document-size
                                   scale highlights))
 
-(defn set-canvas-scale! [canv scale
-                         document [document-width document-height]
-                         image-background image-foreground highlights
+(defn set-canvas-scale! [canv document image-background image-foreground
+                         {:keys [scale highlights]}
                          {:keys [empty-colour border-colour]}]
   (s/set-scale! document scale)
-  (draw-image-background image-background scale
-                         empty-colour border-colour
-                         document-width document-height)
-  (set-canvas-highlights! canv image-foreground [document-width document-height] scale highlights)
-  )
+  (draw-image-background image-background document
+                         {:scale scale}
+                         {:empty-colour empty-colour
+                          :border-colour border-colour})
+  (set-canvas-highlights! canv image-foreground (get-document-size document) scale highlights))
 
 
 (defn make-atom-watch-fn [canv document image-foreground image-background
                           empty-colour border-colour]
   (fn [key atom old-state
        {:keys [scale highlights offset width height url]}]
+    ;; canvas widget size
+    (when (and width height)
+      (set-canvas-size! canv [width height]))
 
-    (let [document-width (.-width (.-texture document))
-          document-height (.-height (.-texture document))]
-      ;; canvas widget size
-      (when (and width height)
-        (set-canvas-size! canv [width height]))
+    ;; offset changed
+    (when-not (= (:offset old-state) offset)
+      (set-canvas-offset! canv offset))
 
-      ;; offset changed
-      (when-not (= (:offset old-state) offset)
-        (set-canvas-offset! canv offset))
+    ;; scale changed
+    (when-not (= (:scale old-state) scale)
+      (set-canvas-scale! canv document image-background image-foreground
+                         {:scale scale
+                          :highlights highlights}
+                         {:empty-colour empty-colour
+                          :border-colour border-colour}))
 
-      ;; scale changed
-      (when-not (= (:scale old-state) scale)
-        (set-canvas-scale! canv scale document [document-width document-height]
-                           image-background image-foreground highlights
-                           {:empty-colour empty-colour
-                            :border-colour border-colour}))
-
-      ;; highlights changed
-      (when-not (= (:highlights old-state) highlights)
-        (set-canvas-highlights! canv image-foreground [document-width document-height]
-                                scale highlights)))))
+    ;; highlights changed
+    (when-not (= (:highlights old-state) highlights)
+      (set-canvas-highlights! canv image-foreground (get-document-size document)
+                              scale highlights))))
 
 
 (defn setup-canvas-image [canv url document scale image-background image-foreground highlights
@@ -115,9 +117,10 @@
     (t/set-texture! :spritesheet document-texture)
     (s/set-texture! document document-texture)
 
-    (draw-image-background image-background scale
-                           empty-colour border-colour
-                           document-width document-height)
+    (draw-image-background image-background document
+                           {:scale scale}
+                           {:empty-colour empty-colour
+                            :border-colour border-colour})
 
     (set-canvas-highlights! canv image-foreground [document-width document-height] scale highlights)
 
