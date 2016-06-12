@@ -47,10 +47,11 @@
   (apply s/set-pivot! (m/get-layer canv :image) pos)
   (apply s/set-pivot! (m/get-layer canv :fg) pos))
 
-(defn draw-all-highlight-rectangles! [sprite document-size scale [{:keys [pos size]} & tail]]
-  (graphics/draw-foreground-rectangle sprite scale pos size document-size)
-  (when (seq tail)
-    (recur sprite document-size scale tail)))
+(defn draw-all-highlight-rectangles! [sprite document-size {:keys [scale highlights]}]
+  (loop [[{:keys [pos size]} & tail] highlights]
+    (graphics/draw-foreground-rectangle sprite scale pos size document-size)
+    (when (seq tail)
+      (recur tail))))
 
 (defn set-canvas-size! [canv [width height]]
   (set! (.-style.width (:canvas canv)) (str width))
@@ -60,21 +61,15 @@
 (defn set-canvas-offset! [canv [x y]]
   (set-canvas-pos! canv [(- x) (- y)]))
 
-(defn set-canvas-highlights! [canv image-foreground document-size scale highlights]
+(defn set-canvas-highlights! [canv image-foreground document-size data]
   (.clear image-foreground)
-  (draw-all-highlight-rectangles! image-foreground document-size
-                                  scale highlights))
+  (draw-all-highlight-rectangles! image-foreground document-size data))
 
 (defn set-canvas-scale! [canv document image-background image-foreground
-                         {:keys [scale highlights]}
-                         {:keys [empty-colour border-colour]}]
-  (s/set-scale! document scale)
-  (draw-image-background image-background document
-                         {:scale scale}
-                         {:empty-colour empty-colour
-                          :border-colour border-colour})
-  (set-canvas-highlights! canv image-foreground (get-document-size document) scale highlights))
-
+                         data background-options]
+  (s/set-scale! document (:scale data))
+  (draw-image-background image-background document data background-options)
+  (set-canvas-highlights! canv image-foreground (get-document-size document) data))
 
 (defn make-atom-watch-fn [canv document image-foreground image-background
                           empty-colour border-colour]
@@ -99,7 +94,7 @@
     ;; highlights changed
     (when-not (= (:highlights old-state) highlights)
       (set-canvas-highlights! canv image-foreground (get-document-size document)
-                              scale highlights))))
+                              {:scale scale :highlights highlights}))))
 
 
 (defn setup-canvas-image [canv url document scale image-background image-foreground highlights
@@ -122,7 +117,10 @@
                            {:empty-colour empty-colour
                             :border-colour border-colour})
 
-    (set-canvas-highlights! canv image-foreground [document-width document-height] scale highlights)
+    (set-canvas-highlights! canv image-foreground
+                            [document-width document-height]
+                            {:scale scale
+                             :highlights highlights})
 
     document-texture))
 
