@@ -1,7 +1,12 @@
 (ns atelier.canvas.devcards
   (:require [reagent.core :as reagent]
             [atelier.canvas.canvas :as canvas]
-            [atelier.canvas.events :as events])
+            [atelier.canvas.events :as events]
+
+            [infinitelives.utils.console :refer [log]]
+            [infinitelives.utils.events :as e]
+            [infinitelives.utils.gamepad :as g]
+            )
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]]))
 ;;
@@ -91,3 +96,8 @@ and drag to reposition canvas. mouse wheel to zoom. Left click and drag to selec
    :url "http://www.goodboydigital.com/pixijs/examples/1/bunny.png"
    }
   {:inspect-data true})
+
+
+
+(log "=>" (e/get-gamepads))
+(log "->" (g/pressed? (g/button :y)))
