@@ -7,7 +7,7 @@
             [infinitelives.pixi.sprite :as s]
             [infinitelives.utils.string :refer [url-keyword]]
             [infinitelives.utils.console :refer [log]]
-
+            [infinitelives.utils.resources :as resources]
             [cljs.core.async :refer [<! chan put! alts!]]
             [atelier.graphics :as graphics])
   (:require-macros
@@ -110,7 +110,7 @@
                           :nearest)
         document-width (.-width document-texture)
         document-height (.-height document-texture)]
-    (t/set-texture! :spritesheet document-texture)
+    ;(t/set-texture! :spritesheet document-texture)
     (s/set-texture! document document-texture)
 
     (draw-image-background image-background document data foreground-drawing-options)
@@ -139,18 +139,18 @@
       (go
         (loop []
           (if url
-            (do
-              (<! (r/load-resources canvas :fg [url]))
-
+            (let [images (<! (r/load-resources canvas :fg [url]))]
               (m/with-sprite canvas :image
-                [document (s/make-sprite :spritesheet :scale scale)]
+                [document (s/make-sprite (js/PIXI.Texture.fromImage
+                                          (str url "#") true (aget js/PIXI.scaleModes "NEAREST")) :scale scale)
+                 ]
                 (let [image-background (js/PIXI.Graphics.)
                       image-foreground (js/PIXI.Graphics.)
                       layers {:image-foreground image-foreground
                               :document document
                               :image-background image-background}
                       document-texture (setup-canvas-image canvas layers @data-atom foreground-drawing-options)]
-                  (t/set-texture! :spritesheet document-texture)
+                  ;(t/set-texture! :spritesheet document-texture)
                   (set! (.-interactive image-background) true)
                   (set! (.-oncontextmenu (:canvas canvas))
                         (fn [e] (.preventDefault e)))
@@ -182,7 +182,7 @@
                         (log "URL changed" url)
 
                         ;; load new image
-                        (<! (r/load-resources canvas :fg [url] :fade-in 0.01 :fade-out 0.01))
+                        (log "GOT:" (<! (resources/load url)))
                         (setup-canvas-image canvas layers @data-atom foreground-drawing-options)
                         (swap! data-atom assoc :document-size (get-document-size document))))
 
