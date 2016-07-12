@@ -11,6 +11,7 @@
 ;            [infinitelives.utils.events :as events]
 ;            [infinitelives.utils.sound :as sound]
             [infinitelives.utils.string :refer [url-keyword]]
+            [infinitelives.utils.resources :as resources]
             [infinitelives.utils.console :refer [log]]
 
             [cljs.core.async :refer [<! chan put! alts!]]
@@ -119,7 +120,7 @@
                           :nearest)
         document-width (.-width document-texture)
         document-height (.-height document-texture)]
-    (t/set-texture! :spritesheet document-texture)
+    ;(t/set-texture! :spritesheet document-texture)
     (s/set-texture! document document-texture)
 
     (graphics/draw-foreground-rectangle
@@ -164,7 +165,7 @@
                       document-width (.-width document-texture)
                       document-height (.-height document-texture)
                       ]
-                  (t/set-texture! :spritesheet document-texture)
+                  ;(t/set-texture! :spritesheet document-texture)
                   (set! (.-interactive image-background) true)
                   (set! (.-mousedown image-background) #(.log js/console "bg:" %))
 
@@ -204,7 +205,7 @@
                         (log "URL changed" url)
 
                         ;; load new image
-                        (<! (r/load-resources canv :fg [url] :fade-in 0.01 :fade-out 0.01))
+                        (<! (resources/load url))
 
                         (setup-canvas-image
                          url document (:scale @data-atom) image-background image-foreground
