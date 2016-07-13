@@ -141,8 +141,7 @@
           (if url
             (let [images (<! (r/load-resources canvas :fg [url]))]
               (m/with-sprite canvas :image
-                [document (s/make-sprite (js/PIXI.Texture.fromImage
-                                          (str url "#") true (aget js/PIXI.scaleModes "NEAREST")) :scale scale)
+                [document (s/make-sprite (:nearest (images url)) :scale scale)
                  ]
                 (let [image-background (js/PIXI.Graphics.)
                       image-foreground (js/PIXI.Graphics.)
