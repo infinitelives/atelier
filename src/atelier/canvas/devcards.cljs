@@ -96,8 +96,3 @@ and drag to reposition canvas. mouse wheel to zoom. Left click and drag to selec
    :url "http://www.goodboydigital.com/pixijs/examples/1/bunny.png"
    }
   {:inspect-data true})
-
-
-
-(log "=>" (e/get-gamepads))
-(log "->" (g/pressed? (g/button :y)))
