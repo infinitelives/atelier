@@ -147,10 +147,6 @@
                   (set! (.-oncontextmenu (:canvas canvas))
                         (fn [e] (.preventDefault e)))
 
-                  ;; we need to keep the size of the document as state,
-                  ;; so that during a new image load we can alter it
-                  (swap! data-atom assoc :document-size (get-document-size document))
-
                   (ui-control-fn (:canvas canvas) data-atom (.-width document-texture) (.-height document-texture))
 
                   (setup-canvas-image canvas nearest layers @data-atom foreground-drawing-options)
@@ -172,8 +168,7 @@
                       (let [url (:url @data-atom)]
                         ;; load new image
                         (let [[url {:keys [nearest image]}] (<! (resources/load url))]
-                          (setup-canvas-image canvas nearest layers @data-atom foreground-drawing-options)
-                          (swap! data-atom assoc :document-size [(.-width nearest) (.-height nearest)]))))
+                          (setup-canvas-image canvas nearest layers @data-atom foreground-drawing-options))))
 
                     (recur (inc f) (:url @data-atom))))))
 
