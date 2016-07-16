@@ -22,37 +22,43 @@
 
 (defonce state
   (reagent/atom
-   {
-    :editor {
-             :value "{
+   (let [width (.-innerWidth js/window)
+         height (.-innerHeight js/window)
+         initial-x (int (* 0.60 width))]
+     {
+      :editor {
+               :value "{
   :foo {:size [8 8] :pos [8 8]}
   :bar {
     :size [16 16]
     :pos [24 24]
   }
 }"
-             :cursor {
-                      :line 1
-                      :ch 0
-                      }
-             :width 200
-             :height 100
-             }
+               :cursor {
+                        :line 1
+                        :ch 0
+                        }
+               :width initial-x
+               :height height
+               }
 
-    :canvas {
-             :url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
-             :highlights [
-                          {:pos [9 12]
-                           :size [1 10]}
-                          ]
-             :scale 3
-             :offset [0 0]
-             :width 200
-             :height 400
+      :canvas {
+               :url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
+               :highlights [
+                            {:pos [9 12]
+                             :size [1 10]}
+                            ]
+               :scale 3
+               :offset [0 0]
+               :width initial-x
+               :height height
 
-             }
+               }
 
-    :partition {:x 200}}))
+      :partition {:x initial-x}})))
+
+(defn print-state []
+  (log (str @state)))
 
 (defn update-atoms! [x]
   (let [height (.-innerHeight js/window)]
@@ -83,21 +89,28 @@
     curs))
 
 (defn simple-component []
-  (let [y (.-innerHeight js/window)
+  (let [height (.-innerHeight js/window)
+        width (.-innerWidth js/window)
+        pos (-> state deref :partition :x)
         canvas-cursor (cursor state [:canvas])
         editor-cursor (cursor state [:editor])
         partition-cursor (cursor state [:partition])]
 
     [:div
      [:div#main-canvas {:style {:position "absolute"}}
-      [canvas/image-canvas
-       canvas-cursor]]
+      [canvas/image-canvas canvas-cursor
+       ;; initial position
+;       :width 20
+;       :height 20
+       ]]
      [partition/partitioner
       partition-cursor
       update-atoms!]
      [:div#code-editor
-      (code/editor
-       editor-cursor)]]))
+      [code/editor editor-cursor
+       ;; initial position
+       :width pos :height height
+       ]]]))
 
 (defn render-simple []
   (reagent/render-component
@@ -106,18 +119,8 @@
 
 (render-simple)
 
-(update-atoms! (int (* (.-innerWidth js/window) 0.75)))
-
 (defonce resize-thread
   (go (let [c (events/new-resize-chan)]
         (while true
           (<! c)
-          (update-atoms! 500)))))
-
-;; hacky bugfix
-#_ (go (<! (timeout 2000))
-    (update-atoms! (int (* (.-innerWidth js/window) 0.7))))
-
-;; test image load
-#_ (go (<! (timeout 4000))
-    (swap! state assoc-in [:canvas :url] "https://retrogradeorbit.github.io/biscuit-switch/img/sprites.png"))
+          (update-atoms! (-> state deref :partition :x))))))

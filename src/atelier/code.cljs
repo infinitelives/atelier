@@ -70,15 +70,18 @@ Note: This widget is for representing clojure literals as source code
           ;; successful parse. TODO: catch error
           (swap! data-atom assoc :parsed parsed))))))
 
+(defn- set-codemirror-placement [codemirror width height]
+  (.setSize codemirror
+            (- (.-innerWidth js/window) width 18)
+            (- height 2))
+  (set! (.-display.wrapper.style.left codemirror)
+        (str (+ 2 12 width) "px")))
+
 (defn- make-watcher [codemirror]
   (fn [key atom old-state new-state]
     (when (not= old-state new-state)
       (when (and (:width new-state) (:height new-state))
-        (.setSize codemirror
-                  (- (.-innerWidth js/window) (:width new-state) 18)
-                  (- (:height new-state) 2))
-        (set! (.-display.wrapper.style.left codemirror)
-              (str (+ 2 12 (:width new-state)) "px")))
+        (set-codemirror-placement codemirror (:width new-state) (:height new-state)))
 
       (when (not= (:value new-state) (:value old-state))
         ;; this setValue needs to NOT trigger an onchange
@@ -100,6 +103,7 @@ Note: This widget is for representing clojure literals as source code
                    :theme "zenburn"
                    :keyMap "emacs"})]
       (.setSize cm width "100%")
+      (set-codemirror-placement cm width height)
       (add-watch data-atom :code-editor (make-watcher cm))
       (.on cm "change" (make-editor-change-fn data-atom cm)))))
 

@@ -121,7 +121,7 @@
    :full-colour 0x0000ff})
 
 (defn image-canvas-did-mount
-  [data-atom ui-control-fn]
+  [data-atom ui-control-fn width height]
   (fn [this]
     (log "component-did-mount")
     (let [{:keys [url width height scale highlights]} @data-atom
@@ -130,10 +130,11 @@
                    :background 0x404040
                    :width width :height height
                    :canvas (reagent/dom-node this)})]
+      (set-canvas-offset! canvas {:offset [0 0]})
       (go
         (loop []
           (if url
-            (let [{{:keys [nearest]} url} (<! (r/load-resources canvas :fg [url]))]
+            (let [[url {:keys [nearest image]}] (<! (resources/load url))]
               (m/with-sprite canvas :image
                 [document (s/make-sprite nearest :scale scale :scale-mode :linear)
                  ]
@@ -178,8 +179,10 @@
               (recur))
             ))))))
 
-(defn image-canvas [data-atom & {:keys [ui-control-fn]
-                                 :or {ui-control-fn (fn [c a w h] nil)}}]
+(defn image-canvas [data-atom & {:keys [ui-control-fn width height]
+                                 :or {ui-control-fn (fn [c a w h] nil)
+                                      width 100
+                                      height 100}}]
   [(with-meta
      (fn [] [:canvas])
-     {:component-did-mount (image-canvas-did-mount data-atom ui-control-fn)})])
+     {:component-did-mount (image-canvas-did-mount data-atom ui-control-fn width height)})])
