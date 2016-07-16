@@ -95,7 +95,7 @@
       (set-canvas-highlights! canv image-foreground (get-document-size document) new-state))))
 
 
-(defn setup-canvas-image [canv
+(defn setup-canvas-image [canv nearest
                           {:keys [document image-foreground image-background]}
                           {:keys [url scale highlights] :as data}
                           {:keys [empty-colour border-colour
@@ -105,20 +105,14 @@
                                 border-colour 0xffffff
                                 highlight-colour 0xff00ff
                                 full-colour 0x0000ff}}]
-  (let [document-texture (r/get-texture
-                          (url-keyword url)
-                          :nearest)
-        document-width (.-width document-texture)
-        document-height (.-height document-texture)]
-    ;(t/set-texture! :spritesheet document-texture)
-    (s/set-texture! document document-texture)
-
+  (let [document-width (.-width nearest)
+        document-height (.-height nearest)]
+    (s/set-texture! document nearest)
     (draw-image-background image-background document data foreground-drawing-options)
     (set-canvas-highlights! canv image-foreground
                             [document-width document-height]
                             data)
-
-    document-texture))
+    nearest))
 
 (def foreground-drawing-options
   {:empty-colour 0x800000
@@ -139,17 +133,16 @@
       (go
         (loop []
           (if url
-            (let [images (<! (r/load-resources canvas :fg [url]))]
+            (let [{{:keys [nearest]} url} (<! (r/load-resources canvas :fg [url]))]
               (m/with-sprite canvas :image
-                [document (s/make-sprite (:nearest (images url)) :scale scale)
+                [document (s/make-sprite nearest :scale scale :scale-mode :linear)
                  ]
                 (let [image-background (js/PIXI.Graphics.)
                       image-foreground (js/PIXI.Graphics.)
                       layers {:image-foreground image-foreground
                               :document document
                               :image-background image-background}
-                      document-texture (setup-canvas-image canvas layers @data-atom foreground-drawing-options)]
-                  ;(t/set-texture! :spritesheet document-texture)
+                      document-texture (setup-canvas-image canvas nearest layers @data-atom foreground-drawing-options)]
                   (set! (.-interactive image-background) true)
                   (set! (.-oncontextmenu (:canvas canvas))
                         (fn [e] (.preventDefault e)))
@@ -160,7 +153,7 @@
 
                   (ui-control-fn (:canvas canvas) data-atom (.-width document-texture) (.-height document-texture))
 
-                  (setup-canvas-image canvas layers @data-atom foreground-drawing-options)
+                  (setup-canvas-image canvas nearest layers @data-atom foreground-drawing-options)
 
                   (.addChild (m/get-layer canvas :bg) image-background)
                   (.addChild (m/get-layer canvas :fg) image-foreground)
@@ -176,14 +169,11 @@
 
                     (when (not= url (:url @data-atom))
                       (log "changed from:" url "to:" (:url @data-atom))
-
                       (let [url (:url @data-atom)]
-                        (log "URL changed" url)
-
                         ;; load new image
-                        (log "GOT:" (<! (resources/load url)))
-                        (setup-canvas-image canvas layers @data-atom foreground-drawing-options)
-                        (swap! data-atom assoc :document-size (get-document-size document))))
+                        (let [[url {:keys [nearest image]}] (<! (resources/load url))]
+                          (setup-canvas-image canvas nearest layers @data-atom foreground-drawing-options)
+                          (swap! data-atom assoc :document-size [(.-width nearest) (.-height nearest)]))))
 
                     (recur (inc f) (:url @data-atom))))))
 
