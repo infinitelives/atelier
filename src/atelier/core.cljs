@@ -57,9 +57,6 @@
 
       :partition {:x initial-x}})))
 
-(defn print-state []
-  (log (str @state)))
-
 (defn update-atoms! [x]
   (let [height (.-innerHeight js/window)]
     (swap! state
