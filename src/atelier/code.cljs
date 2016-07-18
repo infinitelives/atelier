@@ -92,6 +92,27 @@ Note: This widget is for representing clojure literals as source code
       (when (not= (:cursor new-state) (:cursor old-state))
         (.setCursor codemirror (clj->js (:cursor new-state)))))))
 
+(defn search-backwards [codemirror start-char end-char line curs]
+  (let [str (.getLine codemirror line)
+        substring (subs str 0 curs)
+        end-index (.indexOf substring end-char)
+        start-index (.indexOf substring start-char)
+        end-found? (not= -1 end-index)
+        start-found? (not= -1 start-index)
+        ]
+    ;; have we found an end-char? if so abort
+    (cond
+      (and end-found? start-found? (> end-index start-index))
+      nil
+
+      start-found?
+      [line start-index]
+
+      :default
+      (recur codemirror
+             start-char end-char
+             (dec line) (.-length (.getLine codemirror (dec line))))
+      )))
 (defn editor-did-mount [data-atom & {:keys [width height]}]
   (fn [this]
     (let [node (reagent/dom-node this)
