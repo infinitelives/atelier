@@ -3,6 +3,7 @@
             [clojure.string :as string]
 
             [atelier.canvas.canvas :as canvas]
+            [atelier.canvas.events :as e]
             [atelier.canvas.devcards :as devcards]
             [atelier.code :as code]
             [atelier.partition :as partition]
@@ -48,7 +49,7 @@
                             {:pos [9 12]
                              :size [1 10]}
                             ]
-               :scale 3
+               :scale 1
                :offset [0 0]
                :width initial-x
                :height height
@@ -75,7 +76,8 @@
                        (string/join "-")
                        (str "propagate-")
                        keyword)
-        curs (reagent/cursor src path)]
+        curs (reagent/cursor src path)
+        ]
     (add-watch src watch-key
                (fn [k a o n]
                  (when
@@ -96,6 +98,8 @@
     [:div
      [:div#main-canvas {:style {:position "absolute"}}
       [canvas/image-canvas canvas-cursor
+       :ui-control-fn e/canvas-control
+
        ;; initial position
 ;       :width 20
 ;       :height 20
@@ -105,7 +109,7 @@
       update-atoms!]
      [:div#code-editor
       [code/editor editor-cursor
-       ;; initial position
+       ;; removing this breaks the code div resize?!!?
        :width pos :height height
        ]]]))
 
