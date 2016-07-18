@@ -161,8 +161,8 @@ Note: This widget is for representing clojure literals as source code
                    :value (or (:value @data-atom) "")
                    :theme "zenburn"
                    :keyMap "emacs"})]
-      (.setSize cm width "100%")
-      (set-codemirror-placement cm width height)
+      (.setSize cm (:width data-atom) "100%")
+      (set-codemirror-placement cm (:width @data-atom) (:height @data-atom))
       (add-watch data-atom :code-editor (make-watcher cm))
       (.on cm "change" (make-editor-change-fn data-atom cm)))))
 
