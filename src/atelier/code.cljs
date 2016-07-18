@@ -113,6 +113,26 @@ Note: This widget is for representing clojure literals as source code
              start-char end-char
              (dec line) (.-length (.getLine codemirror (dec line))))
       )))
+
+(defn search-forwards [codemirror start-char end-char line curs]
+  (let [str (.getLine codemirror line)
+        substring (subs str curs)
+        end-index (.indexOf substring end-char)
+        start-index (.indexOf substring start-char)
+        end-found? (not= -1 end-index)
+        start-found? (not= -1 start-index)
+        ]
+    (cond
+      (and start-found? end-found? (> end-index start-index))
+      nil
+
+      end-found?
+      [line (+ curs end-index)]
+
+      :default
+      (recur codemirror
+             start-char end-char
+             (inc line) 0))))
 (defn editor-did-mount [data-atom & {:keys [width height]}]
   (fn [this]
     (let [node (reagent/dom-node this)
