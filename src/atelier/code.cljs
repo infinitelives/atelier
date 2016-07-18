@@ -133,6 +133,22 @@ Note: This widget is for representing clojure literals as source code
       (recur codemirror
              start-char end-char
              (inc line) 0))))
+
+(defn from-to [codemirror [ls cs] [le ce]]
+  ;(log "ft:" ls cs le ce)
+  (let [string (.getLine codemirror ls)]
+    (cond
+      (= le ls)
+      (subs string cs (inc ce))
+
+      (> le ls)
+      (str (subs string cs) (from-to codemirror [(inc ls) 0] [le ce]))
+
+      :default
+      nil)))
+
+
+
 (defn editor-did-mount [data-atom & {:keys [width height]}]
   (fn [this]
     (let [node (reagent/dom-node this)
