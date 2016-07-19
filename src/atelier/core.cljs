@@ -111,6 +111,12 @@
       [code/editor editor-cursor
        ;; removing this breaks the code div resize?!!?
        :width pos :height height
+       :cursor-fn (fn [data]
+                    (log "cursor-fn" data)
+                    #_ (swap! state assoc-in [:canvas :highlights 0]
+                           {:pos (:pos data)
+                            :size (:size data)})
+                    )
        ]]]))
 
 (defn render-simple []
