@@ -117,24 +117,24 @@ Note: This widget is for representing clojure literals as source code
       )))
 
 (defn search-forwards [codemirror start-char end-char line curs]
-  (let [str (.getLine codemirror line)
-        substring (subs str curs)
-        end-index (.indexOf substring end-char)
-        start-index (.indexOf substring start-char)
-        end-found? (not= -1 end-index)
-        start-found? (not= -1 start-index)
-        ]
-    (cond
-      (and start-found? end-found? (> end-index start-index))
-      nil
+  (when-let [str (.getLine codemirror line)]
+    (let [substring (subs str curs)
+          end-index (.indexOf substring end-char)
+          start-index (.indexOf substring start-char)
+          end-found? (not= -1 end-index)
+          start-found? (not= -1 start-index)
+          ]
+      (cond
+        (and start-found? end-found? (> end-index start-index))
+        nil
 
-      end-found?
-      [line (+ curs end-index)]
+        end-found?
+        [line (+ curs end-index)]
 
-      :default
-      (recur codemirror
-             start-char end-char
-             (inc line) 0))))
+        :default
+        (recur codemirror
+               start-char end-char
+               (inc line) 0)))))
 
 (defn from-to [codemirror [ls cs] [le ce]]
   ;(log "ft:" ls cs le ce)
