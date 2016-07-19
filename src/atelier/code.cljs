@@ -77,9 +77,10 @@ Note: This widget is for representing clojure literals as source code
   (set! (.-display.wrapper.style.left codemirror)
         (str (+ 2 12 width) "px")))
 
-(defn- make-watcher [codemirror]
+(defn make-watcher [codemirror]
   (fn [key atom old-state new-state]
-    (when (not= old-state new-state)
+    (when (not= (dissoc old-state :parsed :value) (dissoc new-state :parsed :value))
+      (log "change!!!" (str old-state) "=>" (str new-state))
       (when (or
              (not= (:width new-state) (:width old-state))
              (not= (:height new-state) (:height old-state)))
