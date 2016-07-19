@@ -151,7 +151,7 @@ Note: This widget is for representing clojure literals as source code
 
 
 
-(defn editor-did-mount [data-atom & {:keys [width height]}]
+(defn editor-did-mount [data-atom & {:keys [width height cursor-fn]}]
   (fn [this]
     (let [node (reagent/dom-node this)
           cm (js/CodeMirror
@@ -176,19 +176,23 @@ Note: This widget is for representing clojure literals as source code
                (log "found:"  back "to:" forward)
                (when (and back forward)
                  (let [data (read-string (from-to cm back forward))]
+                   (log "data:" (str data))
+                   (cursor-fn data)
                    (log "data struct:" (boolean (and (:pos data) (:size data))))))
+
+
 
                (log ch line (nth (.getLine cm line) ch)))
              )))))
 
-(defn editor [data-atom & {:keys [width height]
+(defn editor [data-atom & {:keys [width height cursor-fn]
                            :or {width 300
                                 height 280}}]
   [(with-meta
      (fn [] [:div {:style {:width (str width "px")
                            :height (str height "px")
                            }}])
-     {:component-did-mount (editor-did-mount data-atom :width width :height height)})])
+     {:component-did-mount (editor-did-mount data-atom :cursor-fn cursor-fn)})])
 
 (defcard card-component-editable-display
   "reloadable, editable code entry"
