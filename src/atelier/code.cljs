@@ -80,7 +80,6 @@ Note: This widget is for representing clojure literals as source code
 (defn make-watcher [codemirror]
   (fn [key atom old-state new-state]
     (when (not= (dissoc old-state :parsed :value) (dissoc new-state :parsed :value))
-      (log "change!!!" (str old-state) "=>" (str new-state))
       (when (or
              (not= (:width new-state) (:width old-state))
              (not= (:height new-state) (:height old-state)))
@@ -97,7 +96,6 @@ Note: This widget is for representing clojure literals as source code
 
 (defn search-backwards [codemirror start-char end-char line curs]
   (when-let [str (.getLine codemirror line)]
-    (log "line:" line)
     (let [
           substring (subs str 0 curs)
           end-index (.indexOf substring end-char)
@@ -178,17 +176,9 @@ Note: This widget is for representing clojure literals as source code
                    line (.-line curs)
                    back (search-backwards cm "{" "}" line ch)
                    forward (search-forwards cm "{" "}" line ch)]
-               (log "found:"  back "to:" forward)
                (when (and back forward)
                  (let [data (read-string (from-to cm back forward))]
-                   (log "data:" (str data))
-                   (cursor-fn data)
-                   (log "data struct:" (boolean (and (:pos data) (:size data))))))
-
-
-
-               (log ch line (nth (.getLine cm line) ch)))
-             )))))
+                   (cursor-fn data)))))))))
 
 (defn editor [data-atom & {:keys [width height cursor-fn]
                            :or {width 300

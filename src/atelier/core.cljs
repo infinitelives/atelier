@@ -89,7 +89,6 @@
 
 
 (defn cursor-fn [data]
-  (log "cursor-fn" data)
   (swap! state assoc-in [:canvas :highlights 0]
          {:pos (:pos data)
           :size (:size data)}))
