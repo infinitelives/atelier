@@ -87,6 +87,13 @@
                    (deref curs))))
     curs))
 
+
+(defn cursor-fn [data]
+  (log "cursor-fn" data)
+  (swap! state assoc-in [:canvas :highlights 0]
+         {:pos (:pos data)
+          :size (:size data)}))
+
 (defn simple-component []
   (let [height (.-innerHeight js/window)
         width (.-innerWidth js/window)
@@ -111,12 +118,7 @@
       [code/editor editor-cursor
        ;; removing this breaks the code div resize?!!?
        :width pos :height height
-       :cursor-fn (fn [data]
-                    (log "cursor-fn" data)
-                    #_ (swap! state assoc-in [:canvas :highlights 0]
-                           {:pos (:pos data)
-                            :size (:size data)})
-                    )
+       :cursor-fn cursor-fn
        ]]]))
 
 (defn render-simple []
