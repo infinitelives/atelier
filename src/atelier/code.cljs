@@ -1,11 +1,12 @@
 (ns atelier.code
-  (:require [reagent.core :as reagent]
+  (:require [atelier.search :as search]
+            [reagent.core :as reagent]
             [cljs.tools.reader :refer [read-string]]
             [cljsjs.codemirror]
             [cljsjs.codemirror.mode.clojure]
             [cljsjs.codemirror.keymap.emacs]
             [infinitelives.utils.console :refer [log]]
-)
+            )
   (:require-macros
    [devcards.core :as dc :refer [defcard deftest defcard-rg defcard-doc]])
   )
@@ -94,66 +95,6 @@ Note: This widget is for representing clojure literals as source code
       (when (not= (:cursor new-state) (:cursor old-state))
         (.setCursor codemirror (clj->js (:cursor new-state)))))))
 
-(defn search-backwards [codemirror start-char end-char line curs]
-  (when-let [str (.getLine codemirror line)]
-    (let [
-          substring (subs str 0 curs)
-          end-index (.indexOf substring end-char)
-          start-index (.indexOf substring start-char)
-          end-found? (not= -1 end-index)
-          start-found? (not= -1 start-index)
-          ]
-      ;; have we found an end-char? if so abort
-      (cond
-        (and end-found? start-found? (> end-index start-index))
-        nil
-
-        start-found?
-        [line start-index]
-
-        (> line 0)
-        (recur codemirror
-               start-char end-char
-               (dec line) (.-length (.getLine codemirror (dec line))))
-
-        :default nil
-        ))))
-
-(defn search-forwards [codemirror start-char end-char line curs]
-  (when-let [str (.getLine codemirror line)]
-    (let [substring (subs str curs)
-          end-index (.indexOf substring end-char)
-          start-index (.indexOf substring start-char)
-          end-found? (not= -1 end-index)
-          start-found? (not= -1 start-index)
-          ]
-      (cond
-        (and start-found? end-found? (> end-index start-index))
-        nil
-
-        end-found?
-        [line (+ curs end-index)]
-
-        :default
-        (recur codemirror
-               start-char end-char
-               (inc line) 0)))))
-
-(defn from-to [codemirror [ls cs] [le ce]]
-  ;(log "ft:" ls cs le ce)
-  (let [string (.getLine codemirror ls)]
-    (cond
-      (= le ls)
-      (subs string cs (inc ce))
-
-      (> le ls)
-      (str (subs string cs) (from-to codemirror [(inc ls) 0] [le ce]))
-
-      :default
-      nil)))
-
-
-
 (defn editor-did-mount [data-atom & {:keys [width height cursor-fn]}]
   (fn [this]
     (let [node (reagent/dom-node this)
@@ -174,10 +115,10 @@ Note: This widget is for representing clojure literals as source code
              (let [curs (.getCursor cm)
                    ch (.-ch curs)
                    line (.-line curs)
-                   back (search-backwards cm "{" "}" line ch)
-                   forward (search-forwards cm "{" "}" line ch)]
+                   back (search/search-backwards cm "{" "}" line ch)
+                   forward (search/search-forwards cm "{" "}" line ch)]
                (when (and back forward)
-                 (let [data (read-string (from-to cm back forward))]
+                 (let [data (read-string (search/from-to cm back forward))]
                    (cursor-fn data)))))))))
 
 (defn editor [data-atom & {:keys [width height cursor-fn]
