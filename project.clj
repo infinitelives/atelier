@@ -1,4 +1,4 @@
-(defproject atelier "0.1.0-SNAPSHOT"
+(defproject infinitelives/atelier "0.1.0-SNAPSHOT"
   :description "FIXME: write this!"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -24,8 +24,9 @@
             [lein-cljsbuild "1.1.3" :exclusions [[org.clojure/clojure]]]]
 
   :source-paths ["src"]
+  :test-paths ["test"]
 
-  :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
+  :clean-targets ^{:protect false} ["resources/public/js/compiled" "target" "resources/test/compiled.js"]
 
   :cljsbuild {:builds
               [
@@ -59,7 +60,17 @@
                 :compiler {:output-to "build/js/compiled/atelier.js"
                            :main atelier.core
                            :optimizations :simple ;:advanced
-                           :pretty-print false}}]}
+                           :pretty-print false}}
+
+               {:id "test"
+                :source-paths ["src" "test"]
+                :compiler {:output-to "resources/test/compiled.js"
+                           :optimizations :whitespace
+                           :pretty-print true}}]
+
+              :test-commands {"test" ["/usr/local/bin/phantomjs"
+                                      "resources/test/test.js"
+                                      "resources/test/test.html"]}}
 
   :figwheel { ;; :http-server-root "public" ;; default and assumes "resources"
              ;; :server-port 3449 ;; default
