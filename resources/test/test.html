@@ -1,8 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!-- <script src="functionprototypebind-polyfill.js"></script> -->
-  <!-- <script src="audiocontext-polyfill.js"></script> -->
-  <script src="compiled.js"></script>
+  <script>
+    window.AudioContext = function() {};
+  </script>
+  <script src="functionprototypebind-polyfill.js"></script>
 </head>
+<body>
+  <div id="app"/>
+  <script src="compiled.js"></script>
+</body>
 </html>
