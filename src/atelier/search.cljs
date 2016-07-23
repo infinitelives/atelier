@@ -28,8 +28,7 @@
        (cond
          ;; ran off the start of the line. continue on previous line
          (neg? curs)
-         (recur get-line
-                start-char end-char
+         (recur get-line start-char end-char
                 (dec line) (.-length (get-line (dec line))) nested-count)
 
          ;; start and end appear together, we recur, same level of nesting
@@ -53,8 +52,7 @@
 
          ;; this line is searched. next line
          (> line 0)
-         (recur get-line
-                start-char end-char
+         (recur get-line start-char end-char
                 (dec line) (.-length (get-line (dec line))) nested-count)
 
          ;; broken syntax. mismatched start/ends
@@ -71,8 +69,7 @@
        (cond
          ;; ran off the end of the line. continue on next line
          (> curs (.-length (get-line line)))
-         (recur get-line
-                start-char end-char
+         (recur get-line start-char end-char
                 (inc line) 0 nested-count)
 
          ;; start and end appear together, we recur, same level of nesting
@@ -96,8 +93,7 @@
 
          ;; this line is searched. next line
          :default
-         (recur get-line
-                start-char end-char
+         (recur get-line start-char end-char
                 (inc line) 0 nested-count))))))
 
 (defn from-to [get-line [ls cs] [le ce]]
