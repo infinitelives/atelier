@@ -29,7 +29,9 @@
           ]
       ;; have we found an end-char? if so abort
       (cond
-        (and end-found? start-found? (> end-index start-index))
+        (or
+         (and end-found? start-found? (> end-index start-index))
+         (and end-found? (not start-found?)))
         nil
 
         start-found?
@@ -52,7 +54,9 @@
           start-found? (!-1 start-index)
           ]
       (cond
-        (and start-found? end-found? (> end-index start-index))
+        (or
+         (and start-found? end-found? (> end-index start-index))
+         (and start-found? (not end-found?)))
         nil
 
         end-found?
