@@ -115,8 +115,8 @@ Note: This widget is for representing clojure literals as source code
              (let [curs (.getCursor cm)
                    ch (.-ch curs)
                    line (.-line curs)
-                   back (search/search-backwards cm "{" "}" line ch)
-                   forward (search/search-forwards cm "{" "}" line ch)]
+                   back (search/reverse-search cm "{" "}" line ch)
+                   forward (search/forward-search cm "{" "}" line ch)]
                (when (and back forward)
                  (let [data (read-string (search/from-to cm back forward))]
                    (cursor-fn data)))))))))
