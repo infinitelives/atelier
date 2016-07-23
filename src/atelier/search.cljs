@@ -18,46 +18,87 @@
     (when (!-1 found)
       found)))
 
-(defn reverse-search [get-line start-char end-char line curs]
-  (when-let [str (get-line line)]
-    (let [start (reverse-search-string str curs start-char)
-          end (reverse-search-string str curs end-char)]
-      (cond
-        (and end start (> end start))
-        nil
+(defn reverse-search
+  ([get-line start-char end-char line curs]
+   (reverse-search get-line start-char end-char line curs 0))
+  ([get-line start-char end-char line curs nested-count]
+   (when-let [str (get-line line)]
+     (let [start (reverse-search-string str curs start-char)
+           end (reverse-search-string str curs end-char)]
+       (cond
+         ;; ran off the start of the line. continue on next line
+         (neg? curs)
+         (recur get-line
+                start-char end-char
+                (dec line) (.-length (get-line (dec line))) nested-count)
 
-        (and end (not start))
-        nil
+         ;; start and end appear together, we recur, same level of nesting
+         (and end start (> end start))
+         (recur get-line start-char end-char
+                line (dec start) nested-count)
 
-        start
-        [line start]
+         ;; only end appears. we recur, but nested one deeper
+         (and end (not start))
+         (recur get-line start-char end-char
+                line (dec end) (inc nested-count))
 
-        (> line 0)
-        (recur get-line
-               start-char end-char
-               (dec line) (.-length (get-line (dec line))))
+         ;; start appears, but we are nested. continue nested one shallower
+         (and start (pos? nested-count))
+         (recur get-line start-char end-char
+                line (dec start) (dec nested-count))
 
-        :default nil
-        ))))
+         ;; start appears and we are outside any nests. The answer!
+         (and start (zero? nested-count))
+         [line start]
 
-(defn forward-search [get-line start-char end-char line curs]
-  (when-let [str (get-line line)]
-    (let [start (forward-search-string str curs start-char)
-          end (forward-search-string str curs end-char)]
-      (cond
-        (and start end (> end start))
-        nil
+         ;; this line is searched. next line
+         (> line 0)
+         (recur get-line
+                start-char end-char
+                (dec line) (.-length (get-line (dec line))) nested-count)
 
-        (and start (not end))
-        nil
+         ;; broken syntax. mismatched start/ends
+         :default nil
+         )))))
 
-        end
-        [line (+ curs end)]
+(defn forward-search
+  ([get-line start-char end-char line curs]
+   (forward-search get-line start-char end-char line curs 0))
+  ([get-line start-char end-char line curs nested-count]
+   (when-let [str (get-line line)]
+     (let [start (forward-search-string str curs start-char)
+           end (forward-search-string str curs end-char)]
+       (cond
+         ;; ran off the start of the line. continue on next line
+         (neg? curs)
+         (recur get-line
+                start-char end-char
+                (inc line) 0 nested-count)
 
-        :default
-        (recur get-line
-               start-char end-char
-               (inc line) 0)))))
+         ;; start and end appear together, we recur, same level of nesting
+         (and end start (> end start))
+         (recur get-line start-char end-char
+                line (inc end) nested-count)
+
+         ;; only start appears. we recur, but nested one deeper
+         (and start (not end))
+         (recur get-line start-char end-char
+                line (inc start) (inc nested-count))
+
+         ;; end appears, but we are nested. continue nested one shallower
+         (and end (pos? nested-count))
+         (recur get-line start-char end-char
+                line (inc end) (dec nested-count))
+
+         ;; start appears and we are outside any nests. The answer!
+         (and end (zero? nested-count))
+         [line end]
+
+         ;; this line is searched. next line
+         :default
+         (recur get-line
+                start-char end-char
+                (inc line) 0 nested-count))))))
 
 (defn from-to [get-line [ls cs] [le ce]]
   (let [string (get-line ls)]

@@ -29,8 +29,8 @@
    (= (read-string (s/from-to src-lines [1 7] [2 20]))
       {:pos [20 20] :size [10 10]})))
 
-(comment
-  (deftest nested-search
+
+(deftest nested-search
     (is
      (= (s/reverse-search src-lines "{" "}" 3 0)
         [0 0]))
@@ -38,26 +38,29 @@
      (= (s/forward-search src-lines "{" "}" 1 0)
         [8 0])))
 
-  (def src2 "{
+
+
+
+(def src2 "{
   :foo {
-  :bar {
-  :baz [1 2]
-  }
+    :bar {
+      :baz [1 2]
+    }
   }
 }")
 
-  (def src2-lines (string/split src2 #"\n"))
+(def src2-lines (string/split src2 #"\n"))
 
-  (deftest expand-hashmap
-    (is
-     (= (s/expand-hashmap src2-lines {:start [3 10] :end [3 10]})
-        {:start [2 9] :end [4 4]}))
-    (is
-     (= (s/expand-hashmap src2-lines {:start [2 9] :end [4 4]})
-        {:start [1 7] :end [5 2]}))
-    (is
-     (= (s/expand-hashmap src2-lines {:start [1 7] :end [5 2]})
-        {:start [0 0] :end [6 0]}))))
+#_ (deftest expand-hashmap
+  (is
+   (= (s/expand-hashmap src2-lines {:start [3 10] :end [3 10]})
+      {:start [2 9] :end [4 4]}))
+  (is
+   (= (s/expand-hashmap src2-lines {:start [2 9] :end [4 4]})
+      {:start [1 7] :end [5 2]}))
+  (is
+   (= (s/expand-hashmap src2-lines {:start [1 7] :end [5 2]})
+      {:start [0 0] :end [6 0]})))
 
 (deftest forward-search-string
   (is (= (s/forward-search-string "foo bar baz" 0 "bar") 4))
