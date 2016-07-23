@@ -26,7 +26,7 @@
      (let [start (reverse-search-string str curs start-char)
            end (reverse-search-string str curs end-char)]
        (cond
-         ;; ran off the start of the line. continue on next line
+         ;; ran off the start of the line. continue on previous line
          (neg? curs)
          (recur get-line
                 start-char end-char
@@ -69,8 +69,8 @@
      (let [start (forward-search-string str curs start-char)
            end (forward-search-string str curs end-char)]
        (cond
-         ;; ran off the start of the line. continue on next line
-         (neg? curs)
+         ;; ran off the end of the line. continue on next line
+         (> curs (.-length (get-line line)))
          (recur get-line
                 start-char end-char
                 (inc line) 0 nested-count)
