@@ -68,7 +68,7 @@
                            :optimizations :whitespace
                            :pretty-print true}}]
 
-              :test-commands {"test" ["/usr/local/bin/phantomjs"
+              :test-commands {"test" ["phantomjs"
                                       "resources/test/test.js"
                                       "resources/test/test.html"]}}
 
