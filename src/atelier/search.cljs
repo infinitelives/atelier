@@ -42,20 +42,17 @@
 
 (defn forward-search [get-line start-char end-char line curs]
   (when-let [str (get-line line)]
-    (let [substring (subs str curs)
-          end-index (.indexOf substring end-char)
-          start-index (.indexOf substring start-char)
-          end-found? (!-1 end-index)
-          start-found? (!-1 start-index)
-          ]
+    (let [start (forward-search-string str curs start-char)
+          end (forward-search-string str curs end-char)]
       (cond
-        (or
-         (and start-found? end-found? (> end-index start-index))
-         (and start-found? (not end-found?)))
+        (and start end (> end start))
         nil
 
-        end-found?
-        [line (+ curs end-index)]
+        (and start (not end))
+        nil
+
+        end
+        [line (+ curs end)]
 
         :default
         (recur get-line
