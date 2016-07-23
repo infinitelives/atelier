@@ -28,3 +28,16 @@
   (is
    (= (read-string (s/from-to src-lines [1 7] [2 20]))
       {:pos [20 20] :size [10 10]})))
+(deftest forward-search-string
+  (is (= (s/forward-search-string "foo bar baz" 0 "bar") 4))
+  (is (= (s/forward-search-string "foo bar baz" 4 "bar") 4))
+  (is (= (s/forward-search-string "foo bar baz" 5 "bar") nil))
+  (is (= (s/forward-search-string "foo bar baz foo" 0 "foo") 0))
+  (is (= (s/forward-search-string "foo bar baz foo" 1 "foo") 12)))
+
+(deftest reverse-search-string
+  (is (= (s/reverse-search-string "foo bar baz" 10 "baz") 8))
+  (is (= (s/reverse-search-string "foo bar baz" 8 "baz") 8))
+  (is (= (s/reverse-search-string "foo bar baz" 7 "baz") nil))
+  (is (= (s/reverse-search-string "foo bar baz foo" 10 "foo") 0))
+  (is (= (s/reverse-search-string "foo bar baz foo" 0 "foo") 0)))

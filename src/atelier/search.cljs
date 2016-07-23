@@ -2,6 +2,22 @@
 
 (def !-1 (partial not= -1))
 
+(defn forward-search-string
+  "search a `string` from position `pos` forwards until `sub` is
+  found. returns nil if the substring isn't found"
+  [string pos char]
+  (let [found (.indexOf (subs string pos) char)]
+    (when (!-1 found)
+      (+ pos found))))
+
+(defn reverse-search-string
+  "search a `string` from position `pos` backwards until `sub` is
+  found. returns nil if the substring isn't found"
+  [string pos char]
+  (let [found (.lastIndexOf (subs string 0 (+ pos (count char))) char)]
+    (when (!-1 found)
+      found)))
+
 (defn reverse-search [get-line start-char end-char line curs]
   (when-let [str (get-line line)]
     (let [
