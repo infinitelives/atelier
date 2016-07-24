@@ -26,7 +26,14 @@
   (let [files (filelist->seq (.-target.files event))
         file (first files)]
     (go
-      (log "recieved:" (<! (read-file file :data-url))))))
+      (log "recieved:"
+           (-> file
+               (read-file :data-url)
+               <!
+               resources/load
+               <!
+               second
+               :nearest)))))
 
 (defn file-selection []
   [:input#files
