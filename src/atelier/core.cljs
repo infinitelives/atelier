@@ -7,6 +7,7 @@
             [atelier.canvas.devcards :as devcards]
             [atelier.code :as code]
             [atelier.partition :as partition]
+            [atelier.file :as file]
 
             [infinitelives.utils.console :refer [log]]
             [infinitelives.utils.events :as events]
@@ -100,25 +101,28 @@
         canvas-cursor (cursor state [:canvas])
         editor-cursor (cursor state [:editor])
         partition-cursor (cursor state [:partition])]
-
     [:div
-     [:div#main-canvas {:style {:position "absolute"}}
-      [canvas/image-canvas canvas-cursor
-       :ui-control-fn e/canvas-control
+     [:div
+      [:select [:option "foo"] [:option "bar"]]
+      [file/file-selection]]
+     [:div
+      [:div#main-canvas {:style {:position "absolute"}}
+       [canvas/image-canvas canvas-cursor
+        :ui-control-fn e/canvas-control
 
-       ;; initial position
-;       :width 20
-;       :height 20
-       ]]
-     [partition/partitioner
-      partition-cursor
-      update-atoms!]
-     [:div#code-editor
-      [code/editor editor-cursor
-       ;; removing this breaks the code div resize?!!?
-       :width pos :height height
-       :cursor-fn cursor-fn
-       ]]]))
+        ;; initial position
+                                        ;       :width 20
+                                        ;       :height 20
+        ]]
+      [partition/partitioner
+       partition-cursor
+       update-atoms!]
+      [:div#code-editor
+       [code/editor editor-cursor
+        ;; removing this breaks the code div resize?!!?
+        :width pos :height height
+        :cursor-fn cursor-fn
+        ]]]]))
 
 (defn render-simple []
   (reagent/render-component
