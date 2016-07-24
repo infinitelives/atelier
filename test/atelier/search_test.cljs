@@ -38,9 +38,6 @@
      (= (s/forward-search src-lines "{" "}" 1 0)
         [8 0])))
 
-
-
-
 (def src2 "{
   :foo {
     :bar {
