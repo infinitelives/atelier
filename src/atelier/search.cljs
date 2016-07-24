@@ -107,3 +107,7 @@
 
       :default
       nil)))
+
+(defn expand-hashmap [get-lines {[ls cs] :start [le ce] :end}]
+  {:start (apply reverse-search get-lines "{" "}" [ls (dec cs)])
+   :end (apply forward-search get-lines "{" "}" [le (inc ce)])})

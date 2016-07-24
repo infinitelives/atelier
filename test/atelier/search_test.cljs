@@ -51,7 +51,7 @@
 
 (def src2-lines (string/split src2 #"\n"))
 
-#_ (deftest expand-hashmap
+(deftest expand-hashmap
   (is
    (= (s/expand-hashmap src2-lines {:start [3 10] :end [3 10]})
       {:start [2 9] :end [4 4]}))
