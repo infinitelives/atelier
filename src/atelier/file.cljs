@@ -22,7 +22,7 @@
       (:data-url nil) (.readAsDataURL reader file))
     c))
 
-(defn handle-file-select [event]
+(defn handle-file-select [set-url-fn event]
   (let [files (filelist->seq (.-target.files event))
         file (first files)]
     (go
@@ -30,12 +30,14 @@
            (-> file
                (read-file :data-url)
                <!
-               resources/load
-               <!
-               second
-               :nearest)))))
+               set-url-fn
+               ;; resources/load
+               ;; <!
+               ;; second
+               ;; :nearest
+               )))))
 
-(defn file-selection []
+(defn file-selection [set-url-fn]
   [:input#files
    {:type "file" :name "files" :multiple true
-    :on-change handle-file-select}])
+    :on-change (partial handle-file-select set-url-fn)}])
