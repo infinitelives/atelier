@@ -113,8 +113,20 @@
         partition-cursor (cursor state [:partition])]
     [:div
      [:div
-      [:select [:option "foo"] [:option "bar"]]
-      [file/file-selection]]
+      [:select
+       {:on-change
+        (fn [ev]
+          (let [v (.-target.value ev)]
+            (swap! state
+                   #(-> %
+                        (assoc :selected v)
+                        (assoc-in [:canvas :url]
+                                  ((:images @state) v))))))
+        :value (:selected @state)}
+       (for [[label url] (:images @state)]
+         [:option {:value label} label])]
+      [file/file-selection
+       #(swap! state assoc-in [:canvas :url] %)]]
      [:div
       [:div#main-canvas {:style {:position "absolute"}}
        [canvas/image-canvas canvas-cursor
