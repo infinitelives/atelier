@@ -28,6 +28,16 @@
          height (.-innerHeight js/window)
          initial-x (int (* 0.60 width))]
      {
+      :selected "bunnies"
+      :images
+      {"moonhenge"
+       "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
+
+       "biscuit switch"
+       "https://retrogradeorbit.github.io/biscuit-switch/img/sprites.png"
+
+       "bunnies"
+       "http://www.goodboydigital.com/pixijs/bunnymark/bunnys.png"}
       :editor {
                :value "{
   :foo {:size [8 8] :pos [8 8]}
