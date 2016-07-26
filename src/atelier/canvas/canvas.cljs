@@ -7,7 +7,6 @@
             [infinitelives.pixi.sprite :as s]
             [infinitelives.utils.string :refer [url-keyword]]
             [infinitelives.utils.console :refer [log]]
-            [infinitelives.utils.resources :as resources]
             [cljs.core.async :refer [<! chan put! alts!]]
             [atelier.graphics :as graphics])
   (:require-macros
@@ -131,10 +130,12 @@
                    :width width :height height
                    :canvas (reagent/dom-node this)})]
       (set-canvas-offset! canvas {:offset [0 0]})
+
+      ;; go block that watches url
       (go
         (loop []
           (if url
-            (let [[url {:keys [nearest image]}] (<! (resources/load url))]
+            (let [[url {:keys [nearest image]}] (<! (r/load url))]
               (m/with-sprite canvas :image
                 [document (s/make-sprite nearest :scale scale :scale-mode :linear)
                  ]
@@ -168,7 +169,7 @@
                       (log "changed from:" url "to:" (:url @data-atom))
                       (let [url (:url @data-atom)]
                         ;; load new image
-                        (let [[url {:keys [nearest image]}] (<! (resources/load url))]
+                        (let [[url {:keys [nearest image]}] (<! (r/load url))]
                           (setup-canvas-image canvas nearest layers @data-atom foreground-drawing-options))))
 
                     (recur (inc f) (:url @data-atom))))))
