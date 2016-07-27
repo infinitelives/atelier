@@ -24,18 +24,10 @@
 
 (defn handle-file-select [set-url-fn event]
   (let [files (filelist->seq (.-target.files event))
-        file (first files)]
+        file (first files)
+        set-url (partial set-url-fn (.-name file))]
     (go
-      (log "recieved:"
-           (-> file
-               (read-file :data-url)
-               <!
-               set-url-fn
-               ;; resources/load
-               ;; <!
-               ;; second
-               ;; :nearest
-               )))))
+      (-> file (read-file :data-url) <! set-url))))
 
 (defn file-selection [set-url-fn]
   [:input#files
