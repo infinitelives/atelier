@@ -126,7 +126,12 @@
        (for [[label url] (:images @state)]
          [:option {:value label} label])]
       [file/file-selection
-       #(swap! state assoc-in [:canvas :url] %)]]
+       (fn [filename data-url]
+         (swap! state
+                #(-> %
+                     (assoc-in [:canvas :url] data-url)
+                     (assoc-in [:images filename] data-url)
+                     (assoc :selected filename))))]]
      [:div
       [:div#main-canvas {:style {:position "absolute"}}
        [canvas/image-canvas canvas-cursor
