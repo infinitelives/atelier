@@ -174,7 +174,7 @@
 
                     (recur (inc f) (:url @data-atom))))))
 
-                                        ;no url. leave canvas blank
+            ;; no url. leave canvas blank
             (do
               (<! (e/next-frame))
               (recur))
