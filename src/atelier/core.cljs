@@ -124,7 +124,7 @@
                                   ((:images @state) v))))))
         :value (:selected @state)}
        (for [[label url] (:images @state)]
-         [:option {:value label} label])]
+         ^{:key label} [:option {:value label} label])]
       [file/file-selection
        (fn [filename data-url]
          (swap! state
