@@ -149,7 +149,7 @@
                   (set! (.-oncontextmenu (:canvas canvas))
                         (fn [e] (.preventDefault e)))
 
-                  (ui-control-fn (:canvas canvas) data-atom (.-width document-texture) (.-height document-texture))
+                  (ui-control-fn (:canvas canvas) data-atom document)
 
                   (setup-canvas-image canvas nearest layers @data-atom foreground-drawing-options)
 
