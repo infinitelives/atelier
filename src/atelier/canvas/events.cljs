@@ -11,6 +11,10 @@
 ;; handlers continue to work
 (events/allow-key-defaults)
 
+(defn- get-document-size [document]
+  (let [texture (.-texture document)]
+    [(.-width texture) (.-height texture)]))
+
 (defn selection-drag [canvas->local-fn sethighlight-fn
                       mouse-up mouse-move mouse-wheel]
   (go
@@ -41,7 +45,7 @@
 
 (defn zoom-canvas [canvas x y
                    getpos-fn getscale-fn setpos-fn zoom-fn zoom-canvas
-                   texture-width texture-height ox]
+                   [texture-width texture-height] ox]
   (let [bounds (.getBoundingClientRect canvas)
         top (.-top bounds)
         left (.-left bounds)
@@ -75,7 +79,7 @@
         (zoom-fn (Math/sign ox))))))
 
 
-(defn control-thread [canvas texture-width texture-height
+(defn control-thread [canvas document
                       mouse-down mouse-up mouse-move mouse-wheel
                       getpos-fn setpos-fn zoom-fn sethighlight-fn getscale-fn]
   (go
@@ -95,7 +99,7 @@
                 (<! (drag-canvas
                      #(coord/canvas->local
                        canvas % (getpos-fn)
-                       [texture-width texture-height]
+                       (get-document-size document)
                        (getscale-fn))
                      #(setpos-fn
                       (+ start-x (- %1 ox))
@@ -113,12 +117,12 @@
                     left (.-left bounds)
                     local-offset (coord/canvas->local canvas [ox oy]
                                                 (getpos-fn)
-                                                [texture-width texture-height]
+                                                (get-document-size document)
                                                 (getscale-fn))]
                 (<! (selection-drag
                      #(coord/canvas->local
                        canvas % (getpos-fn)
-                       [texture-width texture-height]
+                       (get-document-size document)
                        (getscale-fn))
                      #(sethighlight-fn
                        (int (vec2/get-x local-offset))
@@ -134,7 +138,7 @@
               (do (zoom-canvas canvas
                                x y
                                getpos-fn getscale-fn setpos-fn zoom-fn zoom-canvas
-                               texture-width texture-height ox)
+                               (get-document-size document) ox)
                   (recur x y))
 
               (= c mouse-move)
@@ -153,7 +157,7 @@
               [ev (.-clientX ev) (.-clientY ev)]))
       (when (:prevent-default flags) (.preventDefault ev)))))
 
-(defn canvas-control [el data-atom texture-width texture-height]
+(defn canvas-control [el data-atom document]
   (let [mouse-down (chan 1)
         mouse-up (chan 1)
         mouse-move (chan 1)
@@ -167,7 +171,7 @@
     (.addEventListener el "mousewheel"
                        (make-channel-processing-fn mouse-wheel :wheel-delta :prevent-default))
 
-    (control-thread el texture-width texture-height
+    (control-thread el document
                     mouse-down mouse-up mouse-move mouse-wheel
                     (fn [] (:offset @data-atom))
                     (fn [x y] (swap! data-atom assoc :offset [x y]))

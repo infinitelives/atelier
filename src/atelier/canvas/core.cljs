@@ -174,7 +174,7 @@
 
                   (ui-control-fn
                    (:canvas canv) data-atom
-                   document-width document-height)
+                   document)
 
                   (setup-canvas-image
                    url document (:scale @data-atom) image-background image-foreground
