@@ -28,7 +28,7 @@
          height (.-innerHeight js/window)
          initial-x (int (* 0.60 width))]
      {
-      :selected "bunnies"
+      :selected "moonhenge"
       :images
       {"moonhenge"
        "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
