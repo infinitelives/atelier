@@ -73,10 +73,10 @@ Note: This widget is for representing clojure literals as source code
 
 (defn- set-codemirror-placement [codemirror width height]
   (.setSize codemirror
-            (- (.-innerWidth js/window) width 18)
+            (- (.-innerWidth js/window) width 12)
             (- height 2))
   (set! (.-display.wrapper.style.left codemirror)
-        (str (+ 2 12 width) "px")))
+        (str (+ 2 6 width) "px")))
 
 (defn make-watcher [codemirror]
   (fn [key atom old-state new-state]

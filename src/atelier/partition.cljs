@@ -17,7 +17,7 @@
                      (loop []
                        (alt!
                          mouse-move ([[ev x2 y2]]
-                                     (update-fn (- x2 10))
+                                     (update-fn (- x2 4))
                                      (recur))
                          mouse-down (recur)
                          mouse-up nil))
@@ -59,8 +59,9 @@
 
           :border "1px solid black"
           :background-color "#aaa"
+          :background "linear-gradient(to right, #aaa , white, #aaa)"
           :margin "0px"
-          :width "12px"
+          :width "6px"
 
           :left (str (:x @data-atom) "px")
           :top "0px"
