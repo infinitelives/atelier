@@ -30,6 +30,14 @@
       (-> file (read-file :data-url) <! set-url))))
 
 (defn file-selection [set-url-fn]
-  [:input#files
-   {:type "file" :name "files" :multiple true
-    :on-change (partial handle-file-select set-url-fn)}])
+  [:span " "
+   [:input#files
+    {:type "file" :name "files" :multiple false
+     :accept ".png,.jpg,.gif,image/png,image/jpg,image/gif"
+     :style {:display "none"}
+     :on-change (partial handle-file-select set-url-fn)}]
+   [:button
+    {:on-click #(do
+                  (.click (.getElementById js/document "files"))
+                  (.preventDefault %))}
+    "Load Image"]])
