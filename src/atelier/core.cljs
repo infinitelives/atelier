@@ -112,7 +112,10 @@
         editor-cursor (cursor state [:editor])
         partition-cursor (cursor state [:partition])]
     [:div
-     [:div
+     [:div#toolbar
+      {:style {:background "#3f3f3f"
+               :padding "1px"
+               :border-bottom "2px solid #333"}}
       [:select
        {:on-change
         (fn [ev]
