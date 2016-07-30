@@ -28,8 +28,13 @@
          height (.-innerHeight js/window)
          initial-x (int (* 0.60 width))]
      {
+      ;; display about popup?
       :about? false
+
+      ;; selected dropdown
       :selected "moonhenge"
+
+      ;; images for drop down entries
       :images
       {"moonhenge"
        "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
