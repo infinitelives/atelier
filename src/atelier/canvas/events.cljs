@@ -21,8 +21,10 @@
     (loop [x 0 y 0]
       (alt!
         mouse-move ([[ev x2 y2]]
-                    (let [e (canvas->local-fn [x2 y2])]
-                      (sethighlight-fn e)
+                    (let [end-vec (canvas->local-fn [x2 y2])]
+                      (sethighlight-fn
+                       ;; offset by 1x1 pixel to include where mouse currently is
+                       (vec2/add end-vec (vec2/vec2 1 1)))
                       (recur x2 y2)))
         mouse-wheel (recur x y)
         mouse-up nil))))
