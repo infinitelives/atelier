@@ -130,6 +130,38 @@
          {:pos (:pos data)
           :size (:size data)}))
 
+(defn on-selection-change [ev]
+  (let [v (.-target.value ev)]
+    (swap! state
+           #(-> %
+                ;; which is selected
+                (assoc :selected v)
+
+                ;; save current editor state
+                (assoc-in [:editor-contents (:selected %)]
+                          {:value (get-in % [:editor :value])
+                           :cursor (get-in % [:editor :cursor])})
+
+                ;; save current canvas state
+                (assoc-in [:canvas-contents (:selected %)]
+                          {:scale (get-in % [:canvas :scale])
+                           :offset (get-in % [:canvas :offset])})
+
+                ;; new editor state
+                (assoc-in [:editor :value]
+                          (get-in % [:editor-contents v :value]))
+                (assoc-in [:editor :cursor]
+                          (get-in % [:editor-contents v :cursor]))
+
+                ;; new canvas state
+                (assoc-in [:canvas :scale]
+                          (get-in % [:canvas-contents v :scale]))
+                (assoc-in [:canvas :offset]
+                          (get-in % [:canvas-contents v :offset]))
+
+                (assoc-in [:canvas :url]
+                          ((:images @state) v))))))
+
 (defn simple-component []
   (let [height (.-innerHeight js/window)
         width (.-innerWidth js/window)
