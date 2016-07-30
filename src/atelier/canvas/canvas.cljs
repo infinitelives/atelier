@@ -166,7 +166,7 @@
                     (<! (e/next-frame))
 
                     (when (not= url (:url @data-atom))
-                      (log "changed from:" url "to:" (:url @data-atom))
+                      (log "changed!")
                       (let [url (:url @data-atom)]
                         ;; load new image
                         (let [[url {:keys [nearest image]}] (<! (r/load url))]
