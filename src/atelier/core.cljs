@@ -28,7 +28,7 @@
          height (.-innerHeight js/window)
          initial-x (int (* 0.60 width))]
      {
-      :about? true
+      :about? false
       :selected "moonhenge"
       :images
       {"moonhenge"
