@@ -44,16 +44,36 @@
 
        "bunnies"
        "http://www.goodboydigital.com/pixijs/bunnymark/bunnys.png"}
+
+      :editor-contents
+      {
+       "moonhenge"
+       {:value "{}" :cursor {:line 0 :ch 0}}
+
+       "biscuit switch"
+       {:value "{}" :cursor {:line 0 :ch 0}}
+
+       "bunnies"
+       {:value "{}" :cursor {:line 0 :ch 0}}
+       }
+
+      :canvas-contents
+      {
+       "moonhenge"
+       {:scale 1 :offset [0 0]}
+
+       "biscuit switch"
+       {:scale 1 :offset [0 0]}
+
+       "bunnies"
+       {:scale 1 :offset [0 0]}
+       }
+
+      ;; widgets
       :editor {
-               :value "{
-  :foo {:size [8 8] :pos [8 8]}
-  :bar {
-    :size [16 16]
-    :pos [24 24]
-  }
-}"
+               :value ""
                :cursor {
-                        :line 1
+                        :line 0
                         :ch 0
                         }
                :width initial-x
