@@ -44,7 +44,7 @@ Then point your browser at [localhost:3449/cards.html](http://localhost:3449/car
 
 ## License
 
-This software is Copyright © 2016 Crispin Wellington
+Copyright © 2016 Crispin Wellington
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
