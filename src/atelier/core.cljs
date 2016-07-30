@@ -175,14 +175,7 @@
                :padding "1px"
                :border-bottom "2px solid #333"}}
       [:select
-       {:on-change
-        (fn [ev]
-          (let [v (.-target.value ev)]
-            (swap! state
-                   #(-> %
-                        (assoc :selected v)
-                        (assoc-in [:canvas :url]
-                                  ((:images @state) v))))))
+       {:on-change on-selection-change
         :value (:selected @state)}
        (for [[label url] (:images @state)]
          ^{:key label} [:option {:value label} label])]
