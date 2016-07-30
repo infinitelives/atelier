@@ -28,6 +28,7 @@
          height (.-innerHeight js/window)
          initial-x (int (* 0.60 width))]
      {
+      :about? true
       :selected "moonhenge"
       :images
       {"moonhenge"
@@ -134,8 +135,11 @@
                 #(-> %
                      (assoc-in [:canvas :url] data-url)
                      (assoc-in [:images filename] data-url)
-                     (assoc :selected filename))))]]
-     [:div
+                     (assoc :selected filename))))]
+      [:button {:style {:float "right"}
+                :on-click #(swap! state update-in [:about?] not)} "About"]
+      ]
+     [:div {:style {:position "relative"}}
       [:div#main-canvas {:style {:position "absolute"}}
        [canvas/image-canvas canvas-cursor
         :ui-control-fn e/canvas-control
@@ -152,7 +156,39 @@
         ;; removing this breaks the code div resize?!!?
         :width pos :height height
         :cursor-fn cursor-fn
-        ]]]]))
+        ]]]
+
+     (when (:about? @state)
+       [:div.about {:style {:position "absolute"
+                            :width "500px"
+                            :height "500px"
+                            :left "300px"
+                            :top "100px"
+                            :background "#eee"
+                            :padding "16px"
+                            :z-index 10 }}
+        [:div {:on-click #(swap! state assoc :about? false)
+               :style {:float "right"}} "❌"]
+        [:h1 "About Atelier"]
+        [:p "Version 0.1"]
+        [:p "Copyright © 2016, Crispin Wellington <retrogradeorbit@gmail.com>"]
+        [:p "This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version."]
+        [:p "This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details."]
+        [:p "You should have received a copy of the GNU General Public License
+    along with this program.  If not, see "
+         [:a {:href "http://www.gnu.org/licenses/"} "http://www.gnu.org/licenses/"]]
+        [:p "The source code of the project can be found here: "
+         [:a {:href "https://github.com/infinitelives/atelier"} "https://github.com/infinitelives/atelier"]]
+        ])
+
+     ]
+    ))
 
 (defn render-simple []
   (reagent/render-component
