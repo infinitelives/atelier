@@ -161,3 +161,16 @@ Note: This widget is for representing clojure literals as source code
    :cursor {:line 1 :ch 0}}
   {:inspect-data true
    :history true})
+
+(defcard card-component-with-external-value-change
+  "as an external function changes the value, the contents of the codemirror widget should update."
+  (fn [data-atom owner]
+    (reagent/as-element
+     [:div
+      [editor data-atom]
+      [:p "update value:"
+       [:button {:on-click #(swap! data-atom update :value str "!")} "append"]]]))
+  {:value ""
+   :cursor {:line 0 :ch 0}}
+  {:inspect-data true
+   :history true})
