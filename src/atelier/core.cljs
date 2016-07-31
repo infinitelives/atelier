@@ -122,7 +122,8 @@
                :border-bottom "2px solid #333"}}
       [:select
        {:on-change on-selection-change
-        :value (:selected @state)}
+        :value (:selected @state)
+        :disabled (nil? (:selected @state))}
        (for [[label url] (:images @state)]
          ^{:key label} [:option {:value label} label])]
       [file/file-selection
