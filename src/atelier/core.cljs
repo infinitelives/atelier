@@ -106,26 +106,6 @@
                 (assoc-in [:canvas :width] x)
                 (assoc-in [:canvas :height] height)))))
 
-;; propagate watch events into the cursors
-;; https://github.com/reagent-project/reagent/issues/244
-(defn cursor [src path]
-  (let [watch-key (->> path
-                       (map name)
-                       (string/join "-")
-                       (str "propagate-")
-                       keyword)
-        curs (reagent/cursor src path)
-        ]
-    (add-watch src watch-key
-               (fn [k a o n]
-                 (when
-                     (not=
-                      (get-in o path)
-                      (get-in n path))
-                   (deref curs))))
-    curs))
-
-
 (defn cursor-fn [data]
   (swap! state assoc-in [:canvas :highlights 0]
          {:pos (:pos data)
@@ -167,9 +147,9 @@
   (let [height (.-innerHeight js/window)
         width (.-innerWidth js/window)
         pos (-> state deref :partition :x)
-        canvas-cursor (cursor state [:canvas])
-        editor-cursor (cursor state [:editor])
-        partition-cursor (cursor state [:partition])]
+        canvas-cursor (reagent/cursor state [:canvas])
+        editor-cursor (reagent/cursor state [:editor])
+        partition-cursor (reagent/cursor state [:partition])]
     [:div
      [:div#toolbar
       {:style {:background "#3f3f3f"
@@ -208,8 +188,12 @@
       [:div#code-editor
        [code/editor editor-cursor
         ;; removing this breaks the code div resize?!!?
+        ;; everything we deref here triggers a repaint
         :width pos :height height
         :cursor-fn cursor-fn
+
+        ;; we need to refresh code widget when selection changes
+        :selected (:selected @state)
         ]]]
 
      (when (:about? @state)
