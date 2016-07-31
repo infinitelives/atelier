@@ -33,66 +33,31 @@
       :about? false
 
       ;; selected dropdown
-      :selected "moonhenge"
+      :selected nil
 
       ;; images for drop down entries
-      :images
-      {"moonhenge"
-       "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
+      :images {}
 
-       "biscuit switch"
-       "https://retrogradeorbit.github.io/biscuit-switch/img/sprites.png"
+      ;; saved contents of editor widget keyed by selected name
+      :editor-contents {}
 
-       "bunnies"
-       "http://www.goodboydigital.com/pixijs/bunnymark/bunnys.png"}
-
-      :editor-contents
-      {
-       "moonhenge"
-       {:value "{}" :cursor {:line 0 :ch 0}}
-
-       "biscuit switch"
-       {:value "{}" :cursor {:line 0 :ch 0}}
-
-       "bunnies"
-       {:value "{}" :cursor {:line 0 :ch 0}}
-       }
-
-      :canvas-contents
-      {
-       "moonhenge"
-       {:scale 1 :offset [0 0]}
-
-       "biscuit switch"
-       {:scale 1 :offset [0 0]}
-
-       "bunnies"
-       {:scale 1 :offset [0 0]}
-       }
+      ;; saved contents of canvas widget keyed by selected name
+      :canvas-contents {}
 
       ;; widgets
       :editor {
                :value ""
-               :cursor {
-                        :line 0
-                        :ch 0
-                        }
+               :cursor {:line 0 :ch 0}
                :width initial-x
-               :height height
-               }
+               :height height}
 
       :canvas {
-               :url "https://retrogradeorbit.github.io/moonhenge/img/sprites.png"
-               :highlights [
-                            {:pos [9 12]
-                             :size [1 10]}
-                            ]
+               :url nil
+               :highlights []
                :scale 1
                :offset [0 0]
                :width initial-x
-               :height height
-
-               }
+               :height height}
 
       :partition {:x initial-x}})))
 
