@@ -166,10 +166,11 @@
                 #(-> %
                      (assoc-in [:canvas :url] data-url)
                      (assoc-in [:images filename] data-url)
-                     (assoc-in [:editor-contents filename] {:value "{\n}\n" :cursor {:line 0 :ch 0}})
-                     (assoc-in [:canvas-contents filename] {:scale 2 :offset [0 0]})
-                     (assoc :selected filename)
-                     )))]
+                     (assoc-in [:editor-contents filename]
+                               {:value "{\n}\n" :cursor {:line 0 :ch 0}})
+                     (assoc-in [:canvas-contents filename]
+                               {:scale 2 :offset [0 0]})
+                     (assoc :selected filename))))]
       [:button {:style {:float "right"}
                 :on-click #(swap! state update-in [:about?] not)} "About"]
       ]
