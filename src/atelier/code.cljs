@@ -98,7 +98,7 @@ Note: This widget is for representing clojure literals as source code
 
 (defn make-watcher [codemirror]
   (fn [key atom old-state new-state]
-    (when (not= (dissoc old-state :parsed :value) (dissoc new-state :parsed :value))
+    (when (not= (dissoc old-state :parsed) (dissoc new-state :parsed))
       (when (or
              (not= (:width new-state) (:width old-state))
              (not= (:height new-state) (:height old-state)))
