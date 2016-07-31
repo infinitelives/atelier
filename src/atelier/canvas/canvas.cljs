@@ -134,7 +134,7 @@
       ;; go block that watches url
       (go
         (loop []
-          (if url
+          (when-let [url (:url @data-atom)]
             (let [[url {:keys [nearest image]}] (<! (r/load url))]
               (m/with-sprite canvas :image
                 [document (s/make-sprite nearest :scale scale :scale-mode :linear)
@@ -171,13 +171,11 @@
                         (let [[url {:keys [nearest image]}] (<! (r/load url))]
                           (setup-canvas-image canvas nearest layers @data-atom foreground-drawing-options))))
 
-                    (recur (inc f) (:url @data-atom))))))
+                    (recur (inc f) (:url @data-atom)))))))
 
-            ;; no url. leave canvas blank
-            (do
-              (<! (e/next-frame))
-              (recur))
-            ))))))
+          ;; no url. wait a frame and try again.
+          (<! (e/next-frame))
+          (recur))))))
 
 (defn image-canvas [data-atom & {:keys [ui-control-fn width height]
                                  :or {ui-control-fn (fn [c a w h] nil)
