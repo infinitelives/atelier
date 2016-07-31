@@ -57,7 +57,24 @@ Note: This widget is for representing clojure literals as source code
   "a static highlight/js code display"
   (reagent/as-element [component-static-code-display]))
 
-(defn- make-editor-change-fn [data-atom codemirror]
+(defn- make-editor-change-fn
+  "Make the on-change function for a codemirror instance.
+  Once registered, the function returned from this is called by
+  codemirror on every change.
+
+  https://codemirror.net/doc/manual.html#events says:
+
+  Fires every time the content of the editor is changed. The changeObj
+  is a {from, to, text, removed, origin} object containing information
+  about the changes that occurred as second argument. from and to are
+  the positions (in the pre-change coordinate system) where the change
+  started and ended (for example, it might be {ch:0, line:18} if the
+  position is at the beginning of line #19). text is an array of
+  strings representing the text that replaced the changed range (split
+  by line). removed is the text that used to be between from and to,
+  which is overwritten by this change. This event is fired before the
+  end of an operation, before the DOM updates happen."
+  [data-atom codemirror]
   (fn [from to text removed origin]
     (when (not= (.-origin to) "setValue")
       ;; a change from the user, not from the data atom
