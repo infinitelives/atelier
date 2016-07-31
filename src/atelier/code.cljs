@@ -78,15 +78,16 @@ Note: This widget is for representing clojure literals as source code
   (fn [from to text removed origin]
     (when (not= (.-origin to) "setValue")
       ;; a change from the user, not from the data atom
-      (do
+      (let [parsed (try
+                     (read-string (.getValue from))
+                     (catch :default e
+                       (:parsed @data-atom)))]
         (swap! data-atom assoc
                :value (.getValue from)
                :cursor (let [curs (.getCursor codemirror "head")]
                          {:line (.-line curs)
-                          :ch (.-ch curs)}))
-        (let [parsed (read-string (.getValue from))]
-          ;; successful parse. TODO: catch error
-          (swap! data-atom assoc :parsed parsed))))))
+                          :ch (.-ch curs)})
+               :parsed parsed)))))
 
 (defn- set-codemirror-placement [codemirror width height]
   (.setSize codemirror
